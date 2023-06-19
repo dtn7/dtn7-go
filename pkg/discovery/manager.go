@@ -13,8 +13,8 @@ import (
 
 	"github.com/schollz/peerdiscovery"
 
-	"github.com/dtn7/dtn7-go/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
+	"github.com/dtn7/dtn7-ng/pkg/cla"
 )
 
 // Manager publishes and receives Announcements.

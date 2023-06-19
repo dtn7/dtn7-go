@@ -12,8 +12,8 @@ import (
 
 	"github.com/dtn7/cboring"
 
-	"github.com/dtn7/dtn7-go/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
+	"github.com/dtn7/dtn7-ng/pkg/cla"
 )
 
 // Announcement of some node's CLA.
