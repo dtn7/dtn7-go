@@ -45,7 +45,7 @@ func TestBundleBuilderSimple(t *testing.T) {
 
 	bndl3, err := NewBundle(
 		NewPrimaryBlock(
-			StatusRequestDelivery,
+			0,
 			MustNewEndpointID("dtn://dest/"),
 			MustNewEndpointID("dtn://myself/"),
 			NewCreationTimestamp(DtnTimeEpoch, 0),
@@ -66,6 +66,10 @@ func TestBundleBuilderSimple(t *testing.T) {
 		t.Fatal(err)
 	}
 	bndl3Cbor := buff.Bytes()
+
+	if !reflect.DeepEqual(bndl, bndl3) {
+		t.Fatalf("Manually generated bundle not the same: %v, %v", bndl, bndl3)
+	}
 
 	if !bytes.Equal(bndlCbor, bndl3Cbor) {
 		t.Fatalf("CBOR has changed:\n%x\n%x", bndlCbor, bndl3Cbor)

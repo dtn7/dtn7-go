@@ -16,11 +16,11 @@ type Algorithm interface {
 	// NotifyNewBundle notifies this Algorithm about new bundles. They
 	// might be generated at this node or received from a peer. Whether an
 	// algorithm acts on this information or ignores it, is an implementation matter.
-	NotifyNewBundle(descriptor store.BundleDescriptor)
+	NotifyNewBundle(descriptor *store.BundleDescriptor)
 
 	// SelectPeersForForwarding returns an array of ConvergenceSender for a requested bundle.
 	// The CLA selection is based on the algorithm's design.
-	SelectPeersForForwarding(descriptor store.BundleDescriptor) (peers []cla.ConvergenceSender)
+	SelectPeersForForwarding(descriptor *store.BundleDescriptor) (peers []cla.ConvergenceSender)
 
 	// NotifyPeerAppeared notifies the Algorithm about a new peer.
 	NotifyPeerAppeared(peer cla.Convergence)
@@ -30,7 +30,7 @@ type Algorithm interface {
 	NotifyPeerDisappeared(peer cla.Convergence)
 }
 
-var ActiveAlgorithm *Algorithm
+var ActiveAlgorithm Algorithm
 
 func InitialiseAlgorithm(algorithm AlgorithmEnum) error {
 	return nil
