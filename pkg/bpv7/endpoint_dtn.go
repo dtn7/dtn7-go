@@ -14,13 +14,14 @@ import (
 )
 
 const (
-	dtnEndpointSchemeName = "dtn"
-	dtnEndpointSchemeNo   = uint64(1)
-	dtnEndpointDtnNone    = "dtn:none"
-	dtnEndpointDtnNoneSsp = "none"
+	DtnEndpointSchemeName = "dtn"
+	DtnEndpointSchemeNo   = uint64(1)
+	DtnEndpointDtnNone    = "dtn:none"
+	DtnEndpointDtnNoneSsp = "none"
 
-	dtnEndpointRegexpSsp  = `//([\w-._]+)/(.*)`
-	dtnEndpointRegexpFull = "^" + dtnEndpointSchemeName + ":(none|" + dtnEndpointRegexpSsp + ")$"
+	DtnEndpointRegexpSsp     = `//([\w-._]+)/(.*)`
+	DtnEndpointRegexpFull    = "^" + DtnEndpointSchemeName + ":(none|" + DtnEndpointRegexpSsp + ")$"
+	DtnEndpointRegexpNotNone = "^" + DtnEndpointSchemeName + ":(" + DtnEndpointRegexpSsp + ")$"
 )
 
 // DtnEndpoint describes the dtn URI for EndpointIDs, as defined in ietf-dtn-bpbis.
@@ -44,12 +45,12 @@ func parseDtnSsp(ssp string) (nodeName, demux string, isDtnNone bool, err error)
 	// As defined in dtn-bpbis, a "dtn" URI might be the null endpoint "dtn:none" or something URI/IRI like.
 	// Thus, at first we are going after the null endpoint and inspect a more generic URI afterwards.
 
-	if ssp == dtnEndpointDtnNoneSsp {
+	if ssp == DtnEndpointDtnNoneSsp {
 		isDtnNone = true
 		return
 	}
 
-	re := regexp.MustCompile("^" + dtnEndpointRegexpSsp + "$")
+	re := regexp.MustCompile("^" + DtnEndpointRegexpSsp + "$")
 	if !re.MatchString(ssp) {
 		err = fmt.Errorf("ssp does not match a dtn endpoint")
 		return
@@ -74,12 +75,12 @@ func parseDtnSsp(ssp string) (nodeName, demux string, isDtnNone bool, err error)
 
 // NewDtnEndpoint from an URI with the dtn scheme.
 func NewDtnEndpoint(uri string) (e EndpointType, err error) {
-	if !strings.HasPrefix(uri, dtnEndpointSchemeName+":") {
+	if !strings.HasPrefix(uri, DtnEndpointSchemeName+":") {
 		err = fmt.Errorf("URI does not start with the \"dtn\" URI prefix (\"dtn:\")")
 		return
 	}
 
-	if nodeName, demux, isDtnNode, parseErr := parseDtnSsp(uri[len(dtnEndpointSchemeName)+1:]); parseErr != nil {
+	if nodeName, demux, isDtnNode, parseErr := parseDtnSsp(uri[len(DtnEndpointSchemeName)+1:]); parseErr != nil {
 		err = parseErr
 		return
 	} else if isDtnNode {
@@ -98,18 +99,18 @@ func NewDtnEndpoint(uri string) (e EndpointType, err error) {
 
 // SchemeName is "dtn" for DtnEndpoints.
 func (_ DtnEndpoint) SchemeName() string {
-	return dtnEndpointSchemeName
+	return DtnEndpointSchemeName
 }
 
 // SchemeNo is 1 for DtnEndpoints.
 func (_ DtnEndpoint) SchemeNo() uint64 {
-	return dtnEndpointSchemeNo
+	return DtnEndpointSchemeNo
 }
 
 // Authority is the authority part of the Endpoint URI, e.g., "foo" for "dtn://foo/bar" or "none" for "dtn:none".
 func (e DtnEndpoint) Authority() string {
 	if e.IsDtnNone {
-		return dtnEndpointDtnNoneSsp
+		return DtnEndpointDtnNoneSsp
 	} else {
 		return e.NodeName
 	}
@@ -134,7 +135,7 @@ func (e DtnEndpoint) IsSingleton() bool {
 
 // CheckValid returns an error for incorrect data.
 func (e DtnEndpoint) CheckValid() (err error) {
-	if !regexp.MustCompile(dtnEndpointRegexpFull).MatchString(e.String()) {
+	if !regexp.MustCompile(DtnEndpointRegexpFull).MatchString(e.String()) {
 		err = fmt.Errorf("dtn URI does not match regexp")
 	}
 	return
@@ -142,9 +143,9 @@ func (e DtnEndpoint) CheckValid() (err error) {
 
 func (e DtnEndpoint) String() string {
 	if e.IsDtnNone {
-		return dtnEndpointDtnNone
+		return DtnEndpointDtnNone
 	} else {
-		return fmt.Sprintf("%s://%s/%s", dtnEndpointSchemeName, e.NodeName, e.Demux)
+		return fmt.Sprintf("%s://%s/%s", DtnEndpointSchemeName, e.NodeName, e.Demux)
 	}
 }
 

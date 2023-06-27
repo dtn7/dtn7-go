@@ -71,7 +71,7 @@ func getEndpointManager() *endpointManager {
 			impl       interface{}
 			newFunc    func(string) (EndpointType, error)
 		}{
-			{dtnEndpointSchemeNo, dtnEndpointSchemeName, DtnEndpoint{}, NewDtnEndpoint},
+			{DtnEndpointSchemeNo, DtnEndpointSchemeName, DtnEndpoint{}, NewDtnEndpoint},
 			{ipnEndpointSchemeNo, ipnEndpointSchemeName, IpnEndpoint{}, NewIpnEndpoint},
 		}
 

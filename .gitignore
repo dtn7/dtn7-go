@@ -138,3 +138,6 @@ tags
 /dtnd
 /conf*.toml
 /store*
+
+Rapid testing framework
+*.fail

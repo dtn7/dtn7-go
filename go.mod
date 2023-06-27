@@ -9,6 +9,7 @@ require (
 	github.com/schollz/peerdiscovery v1.7.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/timshannon/badgerhold/v4 v4.0.2
+	pgregory.net/rapid v1.0.0
 )
 
 require (

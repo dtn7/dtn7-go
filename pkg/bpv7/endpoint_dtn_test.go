@@ -6,11 +6,12 @@ package bpv7
 
 import (
 	"bytes"
+	"pgregory.net/rapid"
 	"reflect"
 	"testing"
 )
 
-func TestNewDtnEndpoint(t *testing.T) {
+func TestNewDtnEndpointStatic(t *testing.T) {
 	tests := []struct {
 		uri       string
 		nodeName  string
@@ -88,6 +89,31 @@ func TestDtnEndpointCbor(t *testing.T) {
 			t.Fatalf("Expected %v, got %v", test.ep, ep)
 		}
 	}
+}
+
+func TestDtnEndpointProperty(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		idString := rapid.StringMatching(DtnEndpointRegexpFull).Draw(t, "eid")
+		eid, err := NewDtnEndpoint(idString)
+		if err != nil {
+			t.Fatalf("%s failed with error %s", idString, err)
+		}
+
+		var buf bytes.Buffer
+		err = eid.MarshalCbor(&buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		var ep DtnEndpoint
+		if err := ep.UnmarshalCbor(&buf); err != nil {
+			t.Fatal(err)
+		}
+
+		if !reflect.DeepEqual(ep, eid) {
+			t.Fatalf("Expected %v, got %v", eid, ep)
+		}
+	})
 }
 
 func TestDtnEndpointUri(t *testing.T) {

@@ -1,9 +1,10 @@
 package store
 
 import (
+	"time"
+
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	log "github.com/sirupsen/logrus"
-	"time"
 )
 
 type BundleDescriptor struct {
@@ -12,88 +13,87 @@ type BundleDescriptor struct {
 	Destination bpv7.EndpointID
 	ReportTo    bpv7.EndpointID
 
+	Bundle *bpv7.Bundle
+
 	// node IDs of peers which already have this bundle
-	alreadySentTo []bpv7.EndpointID
+	AlreadySentTo []bpv7.EndpointID
 
-	bundle *bpv7.Bundle
-
-	// retentionConstraints as defined by RFC9171 Section 5, see constraints.go for possible types
-	retentionConstraints []Constraint
+	// RetentionConstraints as defined by RFC9171 Section 5, see constraints.go for possible types
+	RetentionConstraints []Constraint
 	// bundle's ID in string-form. Used as the database primary-key. Return-value of ID.String()
-	idString string `badgerhold:"key"`
+	IDString string `badgerhold:"key"`
 	// should this bundle be retained, i.e. protected from deletion
-	retain bool `badgerholdIndex:"retain"`
+	Retain bool `badgerholdIndex:"Retain"`
 	// is this bundle currently being processed
-	processing bool `badgerholdIndex:"processing"`
-	// TTL after which the bundle will be deleted - assuming retain == false
-	expires time.Time `badgerholdIndex:"expires"`
+	Processing bool `badgerholdIndex:"Processing"`
+	// TTL after which the bundle will be deleted - assuming Retain == false
+	Expires time.Time `badgerholdIndex:"Expires"`
 	// filename of the serialised bundle on-disk
-	serialisedFileName string
+	SerialisedFileName string
 }
 
 func (bd *BundleDescriptor) Load() (bpv7.Bundle, error) {
-	if bd.bundle != nil {
-		return *bd.bundle, nil
+	if bd.Bundle != nil {
+		return *bd.Bundle, nil
 	}
-
-	bndle, err := DTNStore.loadEntireBundle(bd.serialisedFileName)
+	bndle, err := DTNStore.loadEntireBundle(bd.SerialisedFileName)
 	if err != nil {
 		return bpv7.Bundle{}, err
 	}
-	bd.bundle = bndle
-	return *bd.bundle, nil
+	bd.Bundle = bndle
+	return *bndle, nil
 }
 
 func (bd *BundleDescriptor) GetAlreadySent() []bpv7.EndpointID {
 	// TODO: refresh current state from db
-	return bd.alreadySentTo
+	return bd.AlreadySentTo
 }
 
 func (bd *BundleDescriptor) AddAlreadySent(peers ...bpv7.EndpointID) {
-	bd.alreadySentTo = append(bd.alreadySentTo, peers...)
+	bd.AlreadySentTo = append(bd.AlreadySentTo, peers...)
 	err := DTNStore.updateBundleMetadata(bd)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"bundle": bd.idString,
+			"bundle": bd.IDString,
 			"error":  err,
 		}).Error("Error syncing bundle metadata")
 	}
 }
 
 func (bd *BundleDescriptor) AddConstraint(constraint Constraint) {
-	bd.retentionConstraints = append(bd.retentionConstraints, constraint)
-	bd.retain = true
+	bd.RetentionConstraints = append(bd.RetentionConstraints, constraint)
+	bd.Retain = true
 	if constraint == ForwardPending {
-		bd.processing = true
+		bd.Processing = true
 	}
 	err := DTNStore.updateBundleMetadata(bd)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"bundle": bd.idString,
+			"bundle": bd.IDString,
 			"error":  err,
 		}).Error("Error syncing bundle metadata")
 	}
 }
 
 func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) {
-	constraints := make([]Constraint, 0, len(bd.retentionConstraints))
-	for _, existingConstraint := range bd.retentionConstraints {
+	constraints := make([]Constraint, 0, len(bd.RetentionConstraints))
+	for _, existingConstraint := range bd.RetentionConstraints {
 		if existingConstraint != constraint {
 			constraints = append(constraints, existingConstraint)
 		}
 	}
-	bd.retentionConstraints = constraints
-	bd.retain = len(bd.retentionConstraints) > 0
-	bd.processing = false
-	for _, constraint := range bd.retentionConstraints {
+	bd.RetentionConstraints = constraints
+	bd.Retain = len(bd.RetentionConstraints) > 0
+	bd.Processing = false
+	for _, constraint := range bd.RetentionConstraints {
 		if constraint == ForwardPending {
-			bd.processing = true
+			bd.Processing = true
 		}
 	}
 	err := DTNStore.updateBundleMetadata(bd)
 	if err != nil {
 		log.WithFields(log.Fields{
-			"bundle": bd.idString,
+			"bundle": bd.IDString,
 			"error":  err,
 		}).Error("Error syncing bundle metadata")
 	}
