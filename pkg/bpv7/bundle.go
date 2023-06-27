@@ -120,6 +120,7 @@ func (b *Bundle) sortBlocks() {
 //
 // The block number will be calculated and overwritten within this method.
 func (b *Bundle) AddExtensionBlock(block CanonicalBlock) error {
+	// TODO: return error if we try to add a block which already exists
 	var blockNumbers []uint64
 	for i := 0; i < len(b.CanonicalBlocks); i++ {
 		blockNumbers = append(blockNumbers, b.CanonicalBlocks[i].BlockNumber)
