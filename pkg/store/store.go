@@ -21,7 +21,7 @@ type Store struct {
 	bundleDirectory string
 }
 
-var DTNStore *Store
+var StoreSingleton *Store
 
 func InitialiseStore(nodeID bpv7.EndpointID, path string) error {
 	opts := badgerhold.DefaultOptions
@@ -42,7 +42,7 @@ func InitialiseStore(nodeID bpv7.EndpointID, path string) error {
 		return err
 	}
 
-	DTNStore = &Store{nodeID: nodeID, metadataStore: badgerStore, bundleDirectory: bundleDirectory}
+	StoreSingleton = &Store{nodeID: nodeID, metadataStore: badgerStore, bundleDirectory: bundleDirectory}
 
 	return nil
 }
@@ -94,7 +94,7 @@ func (store *Store) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, erro
 		bd.AlreadySentTo = append(bd.AlreadySentTo, previousNode)
 	}
 
-	err := DTNStore.metadataStore.Insert(bd.IDString, bd)
+	err := StoreSingleton.metadataStore.Insert(bd.IDString, bd)
 	if err != nil {
 		return nil, err
 	}
@@ -130,13 +130,13 @@ func (store *Store) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, erro
 
 func (store *Store) InsertBundle(bundle bpv7.Bundle) (*BundleDescriptor, error) {
 	bd := BundleDescriptor{}
-	err := DTNStore.metadataStore.Get(bundle.ID().String(), &bd)
+	err := StoreSingleton.metadataStore.Get(bundle.ID().String(), &bd)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bundle.ID().String(),
 			"error":  err,
 		}).Debug("Could not get bundle from store (because it may be new)")
-		return DTNStore.insertNewBundle(bundle)
+		return StoreSingleton.insertNewBundle(bundle)
 	}
 
 	log.WithField("bundle", bundle.ID().String()).Debug("Bundle already exists, updating metadata")

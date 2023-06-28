@@ -24,9 +24,9 @@ type BundleDescriptor struct {
 	IDString string `badgerhold:"key"`
 	// should this bundle be retained, i.e. protected from deletion
 	// bundle's with contraints are also currently being processed
-	Retain bool `badgerholdIndex:"Retain"`
+	Retain bool
 	// TTL after which the bundle will be deleted - assuming Retain == false
-	Expires time.Time `badgerholdIndex:"Expires"`
+	Expires time.Time
 	// filename of the serialised bundle on-disk
 	SerialisedFileName string
 }
@@ -35,7 +35,7 @@ func (bd *BundleDescriptor) Load() (bpv7.Bundle, error) {
 	if bd.Bundle != nil {
 		return *bd.Bundle, nil
 	}
-	bndle, err := DTNStore.loadEntireBundle(bd.SerialisedFileName)
+	bndle, err := StoreSingleton.loadEntireBundle(bd.SerialisedFileName)
 	if err != nil {
 		return bpv7.Bundle{}, err
 	}
@@ -50,7 +50,7 @@ func (bd *BundleDescriptor) GetAlreadySent() []bpv7.EndpointID {
 
 func (bd *BundleDescriptor) AddAlreadySent(peers ...bpv7.EndpointID) {
 	bd.AlreadySentTo = append(bd.AlreadySentTo, peers...)
-	err := DTNStore.updateBundleMetadata(bd)
+	err := StoreSingleton.updateBundleMetadata(bd)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bd.IDString,
@@ -67,7 +67,7 @@ func (bd *BundleDescriptor) AddConstraint(constraint Constraint) error {
 
 	bd.RetentionConstraints = append(bd.RetentionConstraints, constraint)
 	bd.Retain = true
-	return DTNStore.updateBundleMetadata(bd)
+	return StoreSingleton.updateBundleMetadata(bd)
 }
 
 func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) error {
@@ -79,11 +79,11 @@ func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) error {
 	}
 	bd.RetentionConstraints = constraints
 	bd.Retain = len(bd.RetentionConstraints) > 0
-	return DTNStore.updateBundleMetadata(bd)
+	return StoreSingleton.updateBundleMetadata(bd)
 }
 
 func (bd *BundleDescriptor) ResetConstraints() error {
 	bd.RetentionConstraints = make([]Constraint, 0)
 	bd.Retain = false
-	return DTNStore.updateBundleMetadata(bd)
+	return StoreSingleton.updateBundleMetadata(bd)
 }

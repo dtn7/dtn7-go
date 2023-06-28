@@ -30,7 +30,7 @@ type Algorithm interface {
 	NotifyPeerDisappeared(peer cla.Convergence)
 }
 
-var ActiveAlgorithm Algorithm
+var AlgorithmSingleton Algorithm
 
 func InitialiseAlgorithm(algorithm AlgorithmEnum) error {
 	return nil
