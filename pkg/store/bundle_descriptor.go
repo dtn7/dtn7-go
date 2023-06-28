@@ -23,9 +23,8 @@ type BundleDescriptor struct {
 	// bundle's ID in string-form. Used as the database primary-key. Return-value of ID.String()
 	IDString string `badgerhold:"key"`
 	// should this bundle be retained, i.e. protected from deletion
+	// bundle's with contraints are also currently being processed
 	Retain bool `badgerholdIndex:"Retain"`
-	// is this bundle currently being processed
-	Processing bool `badgerholdIndex:"Processing"`
 	// TTL after which the bundle will be deleted - assuming Retain == false
 	Expires time.Time `badgerholdIndex:"Expires"`
 	// filename of the serialised bundle on-disk
@@ -60,22 +59,18 @@ func (bd *BundleDescriptor) AddAlreadySent(peers ...bpv7.EndpointID) {
 	}
 }
 
-func (bd *BundleDescriptor) AddConstraint(constraint Constraint) {
+func (bd *BundleDescriptor) AddConstraint(constraint Constraint) error {
+	// check if value is valid constraint
+	if constraint < DispatchPending || constraint > ReassemblyPending {
+		return NewInvalidConstraint(constraint)
+	}
+
 	bd.RetentionConstraints = append(bd.RetentionConstraints, constraint)
 	bd.Retain = true
-	if constraint == ForwardPending {
-		bd.Processing = true
-	}
-	err := DTNStore.updateBundleMetadata(bd)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"bundle": bd.IDString,
-			"error":  err,
-		}).Error("Error syncing bundle metadata")
-	}
+	return DTNStore.updateBundleMetadata(bd)
 }
 
-func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) {
+func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) error {
 	constraints := make([]Constraint, 0, len(bd.RetentionConstraints))
 	for _, existingConstraint := range bd.RetentionConstraints {
 		if existingConstraint != constraint {
@@ -84,17 +79,11 @@ func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) {
 	}
 	bd.RetentionConstraints = constraints
 	bd.Retain = len(bd.RetentionConstraints) > 0
-	bd.Processing = false
-	for _, constraint := range bd.RetentionConstraints {
-		if constraint == ForwardPending {
-			bd.Processing = true
-		}
-	}
-	err := DTNStore.updateBundleMetadata(bd)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"bundle": bd.IDString,
-			"error":  err,
-		}).Error("Error syncing bundle metadata")
-	}
+	return DTNStore.updateBundleMetadata(bd)
+}
+
+func (bd *BundleDescriptor) ResetConstraints() error {
+	bd.RetentionConstraints = make([]Constraint, 0)
+	bd.Retain = false
+	return DTNStore.updateBundleMetadata(bd)
 }

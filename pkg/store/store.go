@@ -59,7 +59,8 @@ func (store *Store) LoadBundleDescriptor(bundleId bpv7.BundleID) (*BundleDescrip
 }
 
 func (store *Store) loadEntireBundle(filename string) (*bpv7.Bundle, error) {
-	f, err := os.Open(filename)
+	path := filepath.Join(store.bundleDirectory, filename)
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
@@ -119,6 +120,10 @@ func (store *Store) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, erro
 
 	w := bufio.NewWriter(f)
 	err = cboring.Marshal(&bundle, w)
+	if err != nil {
+		return nil, err
+	}
+	err = w.Flush()
 
 	return &bd, err
 }

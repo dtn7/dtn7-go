@@ -4,6 +4,8 @@
 
 package store
 
+import "fmt"
+
 // Constraint is a retention constraint as defined in the subsections RFC9171 Section 5.
 type Constraint int
 
@@ -33,4 +35,19 @@ func (c Constraint) String() string {
 	default:
 		return "unknown"
 	}
+}
+
+func (c Constraint) Valid() bool {
+	return c >= DispatchPending && c <= ReassemblyPending
+}
+
+type InvalidConstraint Constraint
+
+func (ic *InvalidConstraint) Error() string {
+	return fmt.Sprintf("%v is not a valid retention constraint", int(*ic))
+}
+
+func NewInvalidConstraint(constraint Constraint) *InvalidConstraint {
+	ic := InvalidConstraint(constraint)
+	return &ic
 }

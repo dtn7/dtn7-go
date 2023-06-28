@@ -392,9 +392,15 @@ func (bldr *BundleBuilder) PayloadBlock(args ...interface{}) *BundleBuilder {
 		return bldr
 	}
 
+	// if we get an empty payload, put in an empty slice and not nil
+	pBytes := buf.Bytes()
+	if pBytes == nil {
+		pBytes = make([]uint8, 0)
+	}
+
 	// Call Canonical, but add PayloadBlock as the first variadic parameter
 	return bldr.Canonical(append(
-		[]interface{}{NewPayloadBlock(buf.Bytes())}, args[1:]...)...)
+		[]interface{}{NewPayloadBlock(pBytes)}, args[1:]...)...)
 }
 
 // PreviousNodeBlock adds a previous node block to this bundle. The parameters
