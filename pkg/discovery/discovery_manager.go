@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dtn7/dtn7-ng/pkg/util"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/schollz/peerdiscovery"
@@ -17,8 +19,8 @@ import (
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 )
 
-// DiscoveryManager publishes and receives Announcements.
-type DiscoveryManager struct {
+// Manager publishes and receives Announcements.
+type Manager struct {
 	NodeId       bpv7.EndpointID
 	RegisterFunc func(cType cla.CLAType, address string, peerID bpv7.EndpointID) `json:"-"`
 
@@ -26,14 +28,18 @@ type DiscoveryManager struct {
 	stopChan6 chan struct{}
 }
 
-var ManagerSingleton *DiscoveryManager
+var managerSingleton *Manager
 
 func InitialiseManager(
 	nodeId bpv7.EndpointID, registerFunc func(cType cla.CLAType, address string, peerID bpv7.EndpointID),
 	announcements []Announcement, announcementInterval time.Duration,
-	ipv4, ipv6 bool) {
+	ipv4, ipv6 bool) error {
 
-	var manager = &DiscoveryManager{
+	if managerSingleton != nil {
+		return util.NewAlreadyInitialisedError("Discovery Manager")
+	}
+
+	var manager = &Manager{
 		NodeId:       nodeId,
 		RegisterFunc: registerFunc,
 	}
@@ -53,7 +59,7 @@ func InitialiseManager(
 
 	msg, err := MarshalAnnouncements(announcements)
 	if err != nil {
-		log.WithField("error", err).Fatal("Error initialising DiscoveryManager")
+		return err
 	}
 
 	sets := []struct {
@@ -94,7 +100,7 @@ func InitialiseManager(
 		select {
 		case discoverErr := <-discoverErrChan:
 			if discoverErr != nil {
-				log.WithField("error", err).Error("Discovery Error")
+				return err
 			}
 
 		case <-time.After(time.Second):
@@ -102,16 +108,17 @@ func InitialiseManager(
 		}
 	}
 
-	ManagerSingleton = manager
+	managerSingleton = manager
+	return nil
 }
 
-func (manager *DiscoveryManager) notify6(discovered peerdiscovery.Discovered) {
+func (manager *Manager) notify6(discovered peerdiscovery.Discovered) {
 	discovered.Address = fmt.Sprintf("[%s]", discovered.Address)
 
 	manager.notify(discovered)
 }
 
-func (manager *DiscoveryManager) notify(discovered peerdiscovery.Discovered) {
+func (manager *Manager) notify(discovered peerdiscovery.Discovered) {
 	announcements, err := UnmarshalAnnouncements(discovered.Payload)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{
@@ -127,7 +134,7 @@ func (manager *DiscoveryManager) notify(discovered peerdiscovery.Discovered) {
 	}
 }
 
-func (manager *DiscoveryManager) handleDiscovery(announcement Announcement, addr string) {
+func (manager *Manager) handleDiscovery(announcement Announcement, addr string) {
 	if manager.NodeId.SameNode(announcement.Endpoint) {
 		return
 	}
@@ -142,7 +149,7 @@ func (manager *DiscoveryManager) handleDiscovery(announcement Announcement, addr
 }
 
 // Close this Manager.
-func (manager *DiscoveryManager) Close() {
+func (manager *Manager) Close() {
 	for _, c := range []chan struct{}{manager.stopChan4, manager.stopChan6} {
 		if c != nil {
 			c <- struct{}{}
@@ -150,6 +157,6 @@ func (manager *DiscoveryManager) Close() {
 	}
 }
 
-func (manager *DiscoveryManager) String() string {
+func (manager *Manager) String() string {
 	return fmt.Sprintf("Manager(%v)", manager.NodeId)
 }

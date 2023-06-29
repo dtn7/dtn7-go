@@ -6,9 +6,10 @@ package bpv7
 
 import (
 	"bytes"
-	"pgregory.net/rapid"
 	"reflect"
 	"testing"
+
+	"pgregory.net/rapid"
 )
 
 func TestNewDtnEndpointStatic(t *testing.T) {

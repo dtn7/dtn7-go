@@ -1,34 +1,53 @@
 package cla
 
 import (
-	log "github.com/sirupsen/logrus"
 	"sync"
+
+	"github.com/dtn7/dtn7-ng/pkg/util"
+	log "github.com/sirupsen/logrus"
 )
 
-// CLAManager keeps track of all active CLAs
-type CLAManager struct {
+// Manager keeps track of all active CLAs
+type Manager struct {
 	stateMutex   sync.RWMutex
 	receivers    []ConvergenceReceiver
 	senders      []ConvergenceSender
 	pendingStart []Convergence
 }
 
-// CLAManagerSingleton is the singleton object which should always be used for manager access
+// managerSingleton is the singleton object which should always be used for manager access
 // We use this design pattern since there should ever only be a single manager
-var CLAManagerSingleton *CLAManager
+var managerSingleton *Manager
 
-func InitialiseCLAManager() {
-	manager := CLAManager{
+// InitialiseCLAManager initialises the manager-singleton
+// To access Singleton-instance, use GetManagerSingleton
+// Further calls to this function after initialisation will return a util.AlreadyInitialised-error
+func InitialiseCLAManager() error {
+	if managerSingleton != nil {
+		return util.NewAlreadyInitialisedError("CLA Manager")
+	}
+
+	manager := Manager{
 		receivers:    make([]ConvergenceReceiver, 0, 10),
 		senders:      make([]ConvergenceSender, 0, 10),
 		pendingStart: make([]Convergence, 0, 10),
 	}
-	CLAManagerSingleton = &manager
+	managerSingleton = &manager
+	return nil
+}
+
+// GetManagerSingleton returns the manager singleton-instance.
+// Attempting to call this function before store initialisation will cause the program to panic.
+func GetManagerSingleton() *Manager {
+	if managerSingleton == nil {
+		log.Fatalf("Attempting to access an uninitialised manager. This must never happen!")
+	}
+	return managerSingleton
 }
 
 // GetSenders returns the list of currently active sender-type CLAs
 // This method is thread-safe
-func (manager *CLAManager) GetSenders() []ConvergenceSender {
+func (manager *Manager) GetSenders() []ConvergenceSender {
 	manager.stateMutex.RLock()
 	defer manager.stateMutex.RUnlock()
 	return manager.senders
@@ -41,14 +60,14 @@ func (manager *CLAManager) GetSenders() []ConvergenceSender {
 // This is done to avoid deadlocks where another process may indefinitely wait for the CLA's
 // Start-method to return
 // This method is thread-safe
-func (manager *CLAManager) Register(cla Convergence) {
+func (manager *Manager) Register(cla Convergence) {
 	go manager.registerAsync(cla)
 }
 
 // registerAsync performs the actual CLA registration
 // It will call the CLA's Start-method, wait for it to return and if no error was produced,
 // the CLA will be added to the manager's sender/receiver lists.
-func (manager *CLAManager) registerAsync(cla Convergence) {
+func (manager *Manager) registerAsync(cla Convergence) {
 	manager.stateMutex.Lock()
 	// check if this CLA is present in the manager's pendingStart-list
 	for _, pending := range manager.pendingStart {
@@ -119,7 +138,7 @@ func (manager *CLAManager) registerAsync(cla Convergence) {
 // NotifyDisconnect is to be called by a CLA if it notices that it has lost its connection
 // Will remove the CLA from either or both of the manager's lists
 // This method is thread-safe
-func (manager *CLAManager) NotifyDisconnect(cla Convergence) {
+func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	manager.stateMutex.Lock()
 	defer manager.stateMutex.Unlock()
 

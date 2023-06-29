@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/dtn7/dtn7-ng/pkg/util"
+
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/hashicorp/go-multierror"
@@ -15,15 +17,22 @@ import (
 	"github.com/timshannon/badgerhold/v4"
 )
 
-type Store struct {
+type BundleStore struct {
 	nodeID          bpv7.EndpointID
 	metadataStore   *badgerhold.Store
 	bundleDirectory string
 }
 
-var StoreSingleton *Store
+var storeSingleton *BundleStore
 
+// InitialiseStore initialises the store singleton
+// To access Singleton-instance, use GetStoreSingleton
+// Further calls to this function after initialisation will return a util.AlreadyInitialised-error
 func InitialiseStore(nodeID bpv7.EndpointID, path string) error {
+	if storeSingleton != nil {
+		return util.NewAlreadyInitialisedError("BundleStore")
+	}
+
 	opts := badgerhold.DefaultOptions
 	opts.Dir = path
 	opts.ValueDir = path
@@ -42,24 +51,35 @@ func InitialiseStore(nodeID bpv7.EndpointID, path string) error {
 		return err
 	}
 
-	StoreSingleton = &Store{nodeID: nodeID, metadataStore: badgerStore, bundleDirectory: bundleDirectory}
+	storeSingleton = &BundleStore{nodeID: nodeID, metadataStore: badgerStore, bundleDirectory: bundleDirectory}
 
 	return nil
 }
 
-func (store *Store) Close() error {
-	return store.metadataStore.Close()
+// GetStoreSingleton returns the store singleton-instance.
+// Attempting to call this function before store initialisation will cause the program to panic.
+func GetStoreSingleton() *BundleStore {
+	if storeSingleton == nil {
+		log.Fatal("Attempting to access an uninitialised store. This must never happen!")
+	}
+	return storeSingleton
 }
 
-func (store *Store) LoadBundleDescriptor(bundleId bpv7.BundleID) (*BundleDescriptor, error) {
+func (bst *BundleStore) Close() error {
+	err := bst.metadataStore.Close()
+	storeSingleton = nil
+	return err
+}
+
+func (bst *BundleStore) LoadBundleDescriptor(bundleId bpv7.BundleID) (*BundleDescriptor, error) {
 	idString := bundleId.String()
 	bd := BundleDescriptor{}
-	err := store.metadataStore.Get(idString, &bd)
+	err := bst.metadataStore.Get(idString, &bd)
 	return &bd, err
 }
 
-func (store *Store) loadEntireBundle(filename string) (*bpv7.Bundle, error) {
-	path := filepath.Join(store.bundleDirectory, filename)
+func (bst *BundleStore) loadEntireBundle(filename string) (*bpv7.Bundle, error) {
+	path := filepath.Join(bst.bundleDirectory, filename)
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -71,7 +91,7 @@ func (store *Store) loadEntireBundle(filename string) (*bpv7.Bundle, error) {
 	return &bundle, nil
 }
 
-func (store *Store) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, error) {
+func (bst *BundleStore) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, error) {
 	log.WithField("bundle", bundle.ID().String()).Debug("Inserting new bundle")
 	lifetimeDuration := time.Millisecond * time.Duration(bundle.PrimaryBlock.Lifetime)
 	serialisedFileName := fmt.Sprintf("%x", sha256.Sum256([]byte(bundle.ID().String())))
@@ -81,7 +101,7 @@ func (store *Store) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, erro
 		Source:               bundle.PrimaryBlock.SourceNode,
 		Destination:          bundle.PrimaryBlock.Destination,
 		ReportTo:             bundle.PrimaryBlock.ReportTo,
-		AlreadySentTo:        []bpv7.EndpointID{store.nodeID},
+		AlreadySentTo:        []bpv7.EndpointID{bst.nodeID},
 		RetentionConstraints: []Constraint{DispatchPending},
 		Retain:               false,
 		Expires:              bundle.PrimaryBlock.CreationTimestamp.DtnTime().Time().Add(lifetimeDuration),
@@ -94,12 +114,12 @@ func (store *Store) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, erro
 		bd.AlreadySentTo = append(bd.AlreadySentTo, previousNode)
 	}
 
-	err := StoreSingleton.metadataStore.Insert(bd.IDString, bd)
+	err := storeSingleton.metadataStore.Insert(bd.IDString, bd)
 	if err != nil {
 		return nil, err
 	}
 
-	serialisedPath := filepath.Join(store.bundleDirectory, serialisedFileName)
+	serialisedPath := filepath.Join(bst.bundleDirectory, serialisedFileName)
 	f, err := os.Create(serialisedPath)
 	defer f.Close()
 	if err != nil {
@@ -107,7 +127,7 @@ func (store *Store) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, erro
 			"bundle": bd.IDString,
 			"error":  err,
 		}).Error("Error opening file to store serialised bundle. Deleting...")
-		delErr := store.DeleteBundle(&bd)
+		delErr := bst.DeleteBundle(&bd)
 		if delErr != nil {
 			log.WithFields(log.Fields{
 				"bundle": bd.IDString,
@@ -128,15 +148,15 @@ func (store *Store) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, erro
 	return &bd, err
 }
 
-func (store *Store) InsertBundle(bundle bpv7.Bundle) (*BundleDescriptor, error) {
+func (bst *BundleStore) InsertBundle(bundle bpv7.Bundle) (*BundleDescriptor, error) {
 	bd := BundleDescriptor{}
-	err := StoreSingleton.metadataStore.Get(bundle.ID().String(), &bd)
+	err := bst.metadataStore.Get(bundle.ID().String(), &bd)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bundle.ID().String(),
 			"error":  err,
 		}).Debug("Could not get bundle from store (because it may be new)")
-		return StoreSingleton.insertNewBundle(bundle)
+		return bst.insertNewBundle(bundle)
 	}
 
 	log.WithField("bundle", bundle.ID().String()).Debug("Bundle already exists, updating metadata")
@@ -145,22 +165,22 @@ func (store *Store) InsertBundle(bundle bpv7.Bundle) (*BundleDescriptor, error) 
 	if previousNodeBlock, err := bundle.ExtensionBlock(bpv7.ExtBlockTypePreviousNodeBlock); err == nil {
 		previousNode := previousNodeBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint()
 		bd.AlreadySentTo = append(bd.AlreadySentTo, previousNode)
-		uerr = store.updateBundleMetadata(&bd)
+		uerr = bst.updateBundleMetadata(&bd)
 	}
 
 	return &bd, uerr
 }
 
-func (store *Store) updateBundleMetadata(bundleDescriptor *BundleDescriptor) error {
+func (bst *BundleStore) updateBundleMetadata(bundleDescriptor *BundleDescriptor) error {
 	bndl := bundleDescriptor.Bundle
 	bundleDescriptor.Bundle = nil
-	err := store.metadataStore.Update(bundleDescriptor.IDString, bundleDescriptor)
+	err := bst.metadataStore.Update(bundleDescriptor.IDString, bundleDescriptor)
 	bundleDescriptor.Bundle = bndl
 	return err
 }
 
-func (store *Store) DeleteBundle(bundleDescriptor *BundleDescriptor) error {
-	err := store.metadataStore.Delete(bundleDescriptor.IDString, bundleDescriptor)
+func (bst *BundleStore) DeleteBundle(bundleDescriptor *BundleDescriptor) error {
+	err := bst.metadataStore.Delete(bundleDescriptor.IDString, bundleDescriptor)
 	err = multierror.Append(os.Remove(bundleDescriptor.SerialisedFileName))
 	return err
 }

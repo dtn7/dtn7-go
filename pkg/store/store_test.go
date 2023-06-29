@@ -23,7 +23,11 @@ func initTest(t *rapid.T) {
 }
 
 func cleanupTest(t *rapid.T) {
-	err := os.RemoveAll("/tmp/dtn7-test")
+	err := GetStoreSingleton().Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.RemoveAll("/tmp/dtn7-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,12 +57,12 @@ func TestBundleInsertion(t *testing.T) {
 		defer cleanupTest(t)
 
 		bundle := rapid.Custom(generateBundle).Draw(t, "bundle")
-		bd, err := StoreSingleton.insertNewBundle(bundle)
+		bd, err := GetStoreSingleton().insertNewBundle(bundle)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		bdLoad, err := StoreSingleton.LoadBundleDescriptor(bundle.ID())
+		bdLoad, err := GetStoreSingleton().LoadBundleDescriptor(bundle.ID())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -84,7 +88,7 @@ func TestConstraints(t *testing.T) {
 		defer cleanupTest(t)
 
 		bundle := rapid.Custom(generateBundle).Draw(t, "bundle")
-		bd, err := StoreSingleton.insertNewBundle(bundle)
+		bd, err := GetStoreSingleton().insertNewBundle(bundle)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -107,7 +111,7 @@ func TestConstraints(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		bdLoad, err := StoreSingleton.LoadBundleDescriptor(bd.ID)
+		bdLoad, err := GetStoreSingleton().LoadBundleDescriptor(bd.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -123,7 +127,7 @@ func addConstraints(t *rapid.T, bd *BundleDescriptor, constraints []Constraint) 
 		if err != nil {
 			t.Fatal(err)
 		}
-		bdLoad, err := StoreSingleton.LoadBundleDescriptor(bd.ID)
+		bdLoad, err := GetStoreSingleton().LoadBundleDescriptor(bd.ID)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -145,7 +149,7 @@ func removeConstraints(t *rapid.T, bd *BundleDescriptor, constraints []Constrain
 		if err != nil {
 			t.Fatal(err)
 		}
-		bdLoad, err := StoreSingleton.LoadBundleDescriptor(bd.ID)
+		bdLoad, err := GetStoreSingleton().LoadBundleDescriptor(bd.ID)
 		if err != nil {
 			t.Fatal(err)
 		}

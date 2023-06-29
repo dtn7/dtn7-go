@@ -1,13 +1,14 @@
 package processing
 
 import (
+	"sync"
+
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/routing"
 	"github.com/dtn7/dtn7-ng/pkg/store"
 	"github.com/hashicorp/go-multierror"
 	log "github.com/sirupsen/logrus"
-	"sync"
 )
 
 var NodeID bpv7.EndpointID
@@ -75,7 +76,7 @@ func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.Converg
 	}
 
 	// Step 1: spawn a new goroutine for each cla
-	currentPeers := cla.CLAManagerSingleton.GetSenders()
+	currentPeers := cla.GetManagerSingleton().GetSenders()
 	sentAtLeastOnce := false
 	successfulSends := make([]bool, len(currentPeers))
 
