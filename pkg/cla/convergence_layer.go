@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2023 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -37,12 +38,11 @@ import (
 type Convergence interface {
 	io.Closer
 
-	// Start this Convergence{Receiver,Sender} and return both an error
-	// and a boolean indicating if another Start should be tried later.
-	Start() (error, bool)
+	// Start this Convergence{Receiver,Sender}
+	Start() error
 
 	// Address should return a unique address string to both identify this
-	// Convergence{Receiver,Sender} and ensure it will not opened twice.
+	// Convergence{Receiver,Sender} and ensure it will not be opened twice.
 
 	// TODO: The way this works right now does have some problems.
 	// If you're using host:port to identify a CLA you might end up with multiple connections
@@ -60,8 +60,7 @@ type Convergence interface {
 }
 
 // ConvergenceReceiver is an interface for types which are able to receive
-// bundles and write them to a channel. This channel can be accessed through
-// the Channel method.
+// bundles from other nodes.
 type ConvergenceReceiver interface {
 	Convergence
 
@@ -74,12 +73,10 @@ type ConvergenceReceiver interface {
 type ConvergenceSender interface {
 	Convergence
 
-	// Send a bundle to this ConvergenceSender's endpoint. This method should
-	// be thread safe and finish transmitting one bundle, before acting on the
-	// next. This could be achieved by using a mutex or the like.
+	// Send a bundle to this ConvergenceSender's endpoint. This method should be thread safe.
 	Send(bpv7.Bundle) error
 
 	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
-	// if it's known. Otherwise the zero endpoint will be returned.
+	// if it's known. Otherwise, the zero endpoint will be returned.
 	GetPeerEndpointID() bpv7.EndpointID
 }

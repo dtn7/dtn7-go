@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2020 Alvar Penning
-// SPDX-FileCopyrightText: 2020, 2022 Markus Sommer
+// SPDX-FileCopyrightText: 2020, 2022, 2023 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 

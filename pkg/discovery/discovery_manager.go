@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2020, 2022 Markus Sommer
+// SPDX-FileCopyrightText: 2020, 2022, 2023 Markus Sommer
 // SPDX-FileCopyrightText: 2020, 2021 Alvar Penning
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -17,8 +17,8 @@ import (
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 )
 
-// Manager publishes and receives Announcements.
-type Manager struct {
+// DiscoveryManager publishes and receives Announcements.
+type DiscoveryManager struct {
 	NodeId       bpv7.EndpointID
 	RegisterFunc func(cType cla.CLAType, address string, peerID bpv7.EndpointID) `json:"-"`
 
@@ -26,13 +26,14 @@ type Manager struct {
 	stopChan6 chan struct{}
 }
 
-// NewManager for Announcements will be created and started.
-func NewManager(
+var ManagerSingleton *DiscoveryManager
+
+func InitialiseManager(
 	nodeId bpv7.EndpointID, registerFunc func(cType cla.CLAType, address string, peerID bpv7.EndpointID),
 	announcements []Announcement, announcementInterval time.Duration,
-	ipv4, ipv6 bool) (*Manager, error) {
+	ipv4, ipv6 bool) {
 
-	var manager = &Manager{
+	var manager = &DiscoveryManager{
 		NodeId:       nodeId,
 		RegisterFunc: registerFunc,
 	}
@@ -52,7 +53,7 @@ func NewManager(
 
 	msg, err := MarshalAnnouncements(announcements)
 	if err != nil {
-		return nil, err
+		log.WithField("error", err).Fatal("Error initialising DiscoveryManager")
 	}
 
 	sets := []struct {
@@ -93,7 +94,7 @@ func NewManager(
 		select {
 		case discoverErr := <-discoverErrChan:
 			if discoverErr != nil {
-				return nil, discoverErr
+				log.WithField("error", err).Error("Discovery Error")
 			}
 
 		case <-time.After(time.Second):
@@ -101,16 +102,16 @@ func NewManager(
 		}
 	}
 
-	return manager, nil
+	ManagerSingleton = manager
 }
 
-func (manager *Manager) notify6(discovered peerdiscovery.Discovered) {
+func (manager *DiscoveryManager) notify6(discovered peerdiscovery.Discovered) {
 	discovered.Address = fmt.Sprintf("[%s]", discovered.Address)
 
 	manager.notify(discovered)
 }
 
-func (manager *Manager) notify(discovered peerdiscovery.Discovered) {
+func (manager *DiscoveryManager) notify(discovered peerdiscovery.Discovered) {
 	announcements, err := UnmarshalAnnouncements(discovered.Payload)
 	if err != nil {
 		log.WithError(err).WithFields(log.Fields{
@@ -126,7 +127,7 @@ func (manager *Manager) notify(discovered peerdiscovery.Discovered) {
 	}
 }
 
-func (manager *Manager) handleDiscovery(announcement Announcement, addr string) {
+func (manager *DiscoveryManager) handleDiscovery(announcement Announcement, addr string) {
 	if manager.NodeId.SameNode(announcement.Endpoint) {
 		return
 	}
@@ -141,7 +142,7 @@ func (manager *Manager) handleDiscovery(announcement Announcement, addr string) 
 }
 
 // Close this Manager.
-func (manager *Manager) Close() {
+func (manager *DiscoveryManager) Close() {
 	for _, c := range []chan struct{}{manager.stopChan4, manager.stopChan6} {
 		if c != nil {
 			c <- struct{}{}
@@ -149,6 +150,6 @@ func (manager *Manager) Close() {
 	}
 }
 
-func (manager *Manager) String() string {
+func (manager *DiscoveryManager) String() string {
 	return fmt.Sprintf("Manager(%v)", manager.NodeId)
 }
