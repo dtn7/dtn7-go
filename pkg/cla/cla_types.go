@@ -7,6 +7,7 @@ package cla
 
 import (
 	"errors"
+	"fmt"
 )
 
 // CLAType is one of the supported Convergence Layer Adaptors
@@ -23,6 +24,19 @@ const (
 
 	unknownClaTypeString string = "unknown CLA type"
 )
+
+func TypeFromString(claType string) (CLAType, error) {
+	switch claType {
+	case "TCPCLv4":
+		return TCPCLv4, nil
+	case "MTCP":
+		return MTCP, nil
+	case "QUICL":
+		return QUICL, nil
+	default:
+		return 0, fmt.Errorf("invalid CLA Type: %v", claType)
+	}
+}
 
 // CheckValid checks if its value is known.
 func (claType CLAType) CheckValid() (err error) {
@@ -46,4 +60,9 @@ func (claType CLAType) String() string {
 	default:
 		return unknownClaTypeString
 	}
+}
+
+type ListenerConfig struct {
+	Type    CLAType
+	Address string
 }

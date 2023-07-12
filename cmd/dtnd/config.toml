@@ -1,0 +1,8 @@
+node_id = "dtn://test/"
+
+[Store]
+path = "/tmp/dtn_store"
+
+[[Listener]]
+type = "QUICL"
+address = ":35039"

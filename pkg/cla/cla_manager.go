@@ -13,6 +13,7 @@ type Manager struct {
 	receivers    []ConvergenceReceiver
 	senders      []ConvergenceSender
 	pendingStart []Convergence
+	listeners    []Convergence
 }
 
 // managerSingleton is the singleton object which should always be used for manager access
@@ -22,7 +23,7 @@ var managerSingleton *Manager
 // InitialiseCLAManager initialises the manager-singleton
 // To access Singleton-instance, use GetManagerSingleton
 // Further calls to this function after initialisation will return a util.AlreadyInitialised-error
-func InitialiseCLAManager() error {
+func InitialiseCLAManager(listeners []ListenerConfig) error {
 	if managerSingleton != nil {
 		return util.NewAlreadyInitialisedError("CLA Manager")
 	}
@@ -31,9 +32,10 @@ func InitialiseCLAManager() error {
 		receivers:    make([]ConvergenceReceiver, 0, 10),
 		senders:      make([]ConvergenceSender, 0, 10),
 		pendingStart: make([]Convergence, 0, 10),
+		listeners:    make([]Convergence, 0, 10),
 	}
 	managerSingleton = &manager
-	return nil
+	return managerSingleton.startListeners(listeners)
 }
 
 // GetManagerSingleton returns the manager singleton-instance.
@@ -110,6 +112,7 @@ func (manager *Manager) registerAsync(cla Convergence) {
 			"cla":   cla.Address(),
 			"error": err,
 		}).Error("Failed to start CLA")
+		// TODO: remove from pendingStart
 		return
 	}
 
@@ -161,4 +164,13 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 		}
 		manager.senders = newSenders
 	}
+}
+
+func (manager *Manager) startListeners(listeners []ListenerConfig) error {
+	// TODO: start all configured listeners
+	return nil
+}
+
+func (manager *Manager) Shutdown() {
+	// TODO: gracefully shutdown all CLAs & listeners
 }

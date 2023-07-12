@@ -3,6 +3,7 @@ module github.com/dtn7/dtn7-ng
 go 1.20
 
 require (
+	github.com/BurntSushi/toml v1.3.2
 	github.com/dtn7/cboring v0.1.5
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
@@ -28,7 +29,7 @@ require (
 	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/net v0.4.0 // indirect
-	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/sys v0.4.0 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 )
