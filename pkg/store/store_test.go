@@ -33,30 +33,12 @@ func cleanupTest(t *rapid.T) {
 	}
 }
 
-func generateBundle(t *rapid.T) bpv7.Bundle {
-	// TODO: more variable data
-	bndl, err := bpv7.Builder().
-		CRC(bpv7.CRC32).
-		Source(rapid.StringMatching(bpv7.DtnEndpointRegexpNotNone).Draw(t, "source")).
-		Destination(rapid.StringMatching(bpv7.DtnEndpointRegexpFull).Draw(t, "destination")).
-		CreationTimestampNow().
-		Lifetime("10m").
-		HopCountBlock(64).
-		BundleAgeBlock(0).
-		PayloadBlock([]byte(rapid.String().Draw(t, "payload"))).
-		Build()
-	if err != nil {
-		t.Fatalf("Error during bundle creation %s", err)
-	}
-	return bndl
-}
-
 func TestBundleInsertion(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		initTest(t)
 		defer cleanupTest(t)
 
-		bundle := rapid.Custom(generateBundle).Draw(t, "bundle")
+		bundle := bpv7.GenerateBundle(t, 0)
 		bd, err := GetStoreSingleton().insertNewBundle(bundle)
 		if err != nil {
 			t.Fatal(err)
@@ -87,7 +69,7 @@ func TestConstraints(t *testing.T) {
 		initTest(t)
 		defer cleanupTest(t)
 
-		bundle := rapid.Custom(generateBundle).Draw(t, "bundle")
+		bundle := bpv7.GenerateBundle(t, 0)
 		bd, err := GetStoreSingleton().insertNewBundle(bundle)
 		if err != nil {
 			t.Fatal(err)

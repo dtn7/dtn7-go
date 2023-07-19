@@ -5,7 +5,7 @@ import "fmt"
 type AlreadyInitialised string
 
 func (err *AlreadyInitialised) Error() string {
-	return fmt.Sprintf("%v was already initialised", err)
+	return fmt.Sprintf("%s was already initialised", string(*err))
 }
 
 func NewAlreadyInitialisedError(name string) *AlreadyInitialised {
