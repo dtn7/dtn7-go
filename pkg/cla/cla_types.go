@@ -14,13 +14,19 @@ import (
 type CLAType uint
 
 const (
-	// TCPCLv4 identifies the Delay-Tolerant Networking TCP Convergence Layer Protocol Version 4
+	// Delay-Tolerant Networking TCP Convergence Layer Protocol Version 4
+	// As specified in RFC9174: https://datatracker.ietf.org/doc/html/rfc9174
 	TCPCLv4 CLAType = 0
 
-	// MTCP identifies the Minimal TCP Convergence-Layer Protocol, implemented in cla/mtcp.
+	// There originally existed an RFC draft for a "Minimal TCP Convergence Layer",
+	// but this has expired and not seen any activity in a long time... so not sure where we stand there
+	// https://datatracker.ietf.org/doc/html/draft-ietf-dtn-mtcpcl-01
 	MTCP CLAType = 10
 
 	QUICL CLAType = 20
+
+	// Dummy CLA used for testing
+	Dummy CLAType = 8080
 
 	unknownClaTypeString string = "unknown CLA type"
 )
@@ -60,6 +66,17 @@ func (claType CLAType) String() string {
 	default:
 		return unknownClaTypeString
 	}
+}
+
+type UnsupportedCLATypeError CLAType
+
+func NewUnsupportedCLATypeError(claType CLAType) *UnsupportedCLATypeError {
+	err := UnsupportedCLATypeError(claType)
+	return &err
+}
+
+func (err *UnsupportedCLATypeError) Error() string {
+	return fmt.Sprintf("%s is not a supported CLA type", CLAType(*err))
 }
 
 type ListenerConfig struct {

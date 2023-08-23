@@ -1,6 +1,7 @@
 package cla
 
 import (
+	"github.com/dtn7/dtn7-ng/pkg/cla/dummy_cla"
 	"sync"
 
 	"github.com/dtn7/dtn7-ng/pkg/util"
@@ -13,7 +14,7 @@ type Manager struct {
 	receivers    []ConvergenceReceiver
 	senders      []ConvergenceSender
 	pendingStart []Convergence
-	listeners    []Convergence
+	listeners    []ConvergenceListener
 }
 
 // managerSingleton is the singleton object which should always be used for manager access
@@ -32,7 +33,7 @@ func InitialiseCLAManager(listeners []ListenerConfig) error {
 		receivers:    make([]ConvergenceReceiver, 0, 10),
 		senders:      make([]ConvergenceSender, 0, 10),
 		pendingStart: make([]Convergence, 0, 10),
-		listeners:    make([]Convergence, 0, 10),
+		listeners:    make([]ConvergenceListener, 0, 10),
 	}
 	managerSingleton = &manager
 	return managerSingleton.startListeners(listeners)
@@ -53,6 +54,22 @@ func (manager *Manager) GetSenders() []ConvergenceSender {
 	manager.stateMutex.RLock()
 	defer manager.stateMutex.RUnlock()
 	return manager.senders
+}
+
+// GetReceivers returns the list of currently active receiver-type CLAs
+// This method is thread-safe
+func (manager *Manager) GetReceivers() []ConvergenceReceiver {
+	manager.stateMutex.RLock()
+	defer manager.stateMutex.RUnlock()
+	return manager.receivers
+}
+
+// GetListeners returns the list of CLA listeners
+// This method is thread-safe
+func (manager *Manager) GetListeners() []ConvergenceListener {
+	manager.stateMutex.RLock()
+	defer manager.stateMutex.RUnlock()
+	return manager.listeners
 }
 
 // TODO: Method to create CLA from parameters
@@ -106,7 +123,7 @@ func (manager *Manager) registerAsync(cla Convergence) {
 	manager.pendingStart = append(manager.pendingStart, cla)
 	manager.stateMutex.Unlock()
 
-	err := cla.Start()
+	err := cla.Activate()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"cla":   cla.Address(),
@@ -129,7 +146,7 @@ func (manager *Manager) registerAsync(cla Convergence) {
 	}
 
 	// remove the cla from the pending-list
-	pending := make([]Convergence, len(manager.pendingStart))
+	pending := make([]Convergence, 0, len(manager.pendingStart))
 	for _, pendingCLA := range manager.pendingStart {
 		if cla.Address() != pendingCLA.Address() {
 			pending = append(pending, pendingCLA)
@@ -167,10 +184,43 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 }
 
 func (manager *Manager) startListeners(listeners []ListenerConfig) error {
-	// TODO: start all configured listeners
+	for _, lst := range listeners {
+		var listener ConvergenceListener
+		switch lst.Type {
+		case Dummy:
+			listener = dummy_cla.NewDummyListener(lst.Address)
+		default:
+			return NewUnsupportedCLATypeError(lst.Type)
+		}
+
+		err := listener.Start()
+		if err != nil {
+			return err
+		}
+
+		manager.listeners = append(manager.listeners, listener)
+	}
 	return nil
 }
 
 func (manager *Manager) Shutdown() {
-	// TODO: gracefully shutdown all CLAs & listeners
+	manager.stateMutex.Lock()
+	defer manager.stateMutex.Unlock()
+
+	for _, receiver := range manager.receivers {
+		go receiver.Close()
+	}
+	manager.receivers = make([]ConvergenceReceiver, 0)
+
+	for _, sender := range manager.senders {
+		go sender.Close()
+	}
+	manager.senders = make([]ConvergenceSender, 0)
+
+	for _, listener := range manager.listeners {
+		go listener.Close()
+	}
+	manager.listeners = make([]ConvergenceListener, 0)
+
+	managerSingleton = nil
 }

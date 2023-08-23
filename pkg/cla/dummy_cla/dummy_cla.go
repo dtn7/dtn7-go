@@ -3,6 +3,8 @@ package dummy_cla
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
+	"time"
 
 	"github.com/dtn7/cboring"
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
@@ -39,6 +41,8 @@ func NewDummyCLAPair(peerAID bpv7.EndpointID, peerBID bpv7.EndpointID, receiveCa
 }
 
 func (cla *DummyCLA) Close() error {
+	wait := time.Duration(rand.Intn(10))
+	time.Sleep(time.Millisecond * wait)
 	if cla.channelActive {
 		cla.channelActive = false
 		close(cla.transferChannel)
@@ -46,9 +50,13 @@ func (cla *DummyCLA) Close() error {
 	return nil
 }
 
-func (cla *DummyCLA) Start() error {
+func (cla *DummyCLA) Activate() error {
 	go cla.handleReceive()
 	return nil
+}
+
+func (cla *DummyCLA) Active() bool {
+	return cla.channelActive
 }
 
 func (cla *DummyCLA) handleReceive() {

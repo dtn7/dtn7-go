@@ -30,6 +30,14 @@ import (
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 )
 
+type ConvergenceListener interface {
+	io.Closer
+
+	Start() error
+	Running() bool
+	Address() string
+}
+
 // Convergence is an interface to describe all kinds of Convergence Layer
 // Adapters. There should not be a direct implementation of this interface. One
 // must implement ConvergenceReceiver and/or ConvergenceSender, which are both
@@ -38,8 +46,8 @@ import (
 type Convergence interface {
 	io.Closer
 
-	// Start this Convergence{Receiver,Sender}
-	Start() error
+	Activate() error
+	Active() bool
 
 	// Address should return a unique address string to both identify this
 	// Convergence{Receiver,Sender} and ensure it will not be opened twice.
@@ -52,9 +60,6 @@ type Convergence interface {
 	// full duplex communication it's unnecessary to have to CLAs for each node-pair.
 	// But fixing this would probably require some major changes to the manager.
 	Address() string
-
-	// IsPermanent returns true, if this CLA should not be removed after failures.
-	IsPermanent() bool
 
 	// TODO: String method for address-logging
 }
