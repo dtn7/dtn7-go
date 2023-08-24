@@ -2,12 +2,13 @@ package cla
 
 import (
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/cla/dummy_cla"
 	log "github.com/sirupsen/logrus"
 	"pgregory.net/rapid"
-	"testing"
-	"time"
 )
 
 func setup(t *rapid.T) {
@@ -47,6 +48,7 @@ func teardown() {
 func TestRegister(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		setup(t)
+		defer teardown()
 
 		numberOfCLAs := rapid.Uint8Max(100).Draw(t, "Number of CLAs")
 		clas := make([]Convergence, numberOfCLAs)
@@ -80,7 +82,5 @@ func TestRegister(t *testing.T) {
 				log.Fatalf("CLA %v not present", cla.Address())
 			}
 		}
-
-		defer teardown()
 	})
 }

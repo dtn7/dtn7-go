@@ -91,7 +91,7 @@ func (bst *BundleStore) loadEntireBundle(filename string) (*bpv7.Bundle, error) 
 	return &bundle, nil
 }
 
-func (bst *BundleStore) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, error) {
+func (bst *BundleStore) insertNewBundle(bundle *bpv7.Bundle) (*BundleDescriptor, error) {
 	log.WithField("bundle", bundle.ID().String()).Debug("Inserting new bundle")
 	lifetimeDuration := time.Millisecond * time.Duration(bundle.PrimaryBlock.Lifetime)
 	serialisedFileName := fmt.Sprintf("%x", sha256.Sum256([]byte(bundle.ID().String())))
@@ -139,7 +139,7 @@ func (bst *BundleStore) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, 
 	}
 
 	w := bufio.NewWriter(f)
-	err = cboring.Marshal(&bundle, w)
+	err = cboring.Marshal(bundle, w)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +148,7 @@ func (bst *BundleStore) insertNewBundle(bundle bpv7.Bundle) (*BundleDescriptor, 
 	return &bd, err
 }
 
-func (bst *BundleStore) InsertBundle(bundle bpv7.Bundle) (*BundleDescriptor, error) {
+func (bst *BundleStore) InsertBundle(bundle *bpv7.Bundle) (*BundleDescriptor, error) {
 	bd := BundleDescriptor{}
 	err := bst.metadataStore.Get(bundle.ID().String(), &bd)
 	if err != nil {

@@ -1,11 +1,12 @@
 package application_agent
 
 import (
+	"sync"
+
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/store"
 	"github.com/hashicorp/go-multierror"
 	log "github.com/sirupsen/logrus"
-	"sync"
 )
 
 type Manager struct {
@@ -96,7 +97,7 @@ func (manager *Manager) UnregisterEndpoint(id bpv7.EndpointID, removeAgent Appli
 	return nil
 }
 
-func (manager *Manager) Delivery(bundleDescriptor store.BundleDescriptor) error {
+func (manager *Manager) Delivery(bundleDescriptor *store.BundleDescriptor) error {
 	manager.stateMutex.RLock()
 	defer manager.stateMutex.RUnlock()
 

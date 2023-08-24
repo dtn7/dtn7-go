@@ -2,6 +2,7 @@ package application_agent
 
 import (
 	"fmt"
+
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/store"
 )
@@ -10,7 +11,7 @@ type ApplicationAgent interface {
 	// Endpoints returns the EndpointIDs that this ApplicationAgent answers to.
 	Endpoints() []bpv7.EndpointID
 
-	Deliver(bundleDescriptor store.BundleDescriptor) error
+	Deliver(bundleDescriptor *store.BundleDescriptor) error
 
 	Shutdown()
 }

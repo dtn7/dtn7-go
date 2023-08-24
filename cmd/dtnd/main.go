@@ -3,6 +3,9 @@ package main
 import (
 	"os"
 
+	"github.com/dtn7/dtn7-ng/pkg/processing"
+	"github.com/dtn7/dtn7-ng/pkg/routing"
+
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/store"
 
@@ -25,7 +28,7 @@ func main() {
 	}
 	defer store.GetStoreSingleton().Close()
 
-	err = cla.InitialiseCLAManager(conf.Listener)
+	err = cla.InitialiseCLAManager(conf.Listener, processing.ReceiveBundle, routing.GetAlgorithmSingleton().NotifyPeerAppeared, routing.GetAlgorithmSingleton().NotifyPeerDisappeared)
 	if err != nil {
 		log.WithField("error", err).Fatal("Error initialising CLAs")
 	}

@@ -1,8 +1,10 @@
 package cla
 
 import (
-	"github.com/dtn7/dtn7-ng/pkg/cla/dummy_cla"
 	"sync"
+
+	"github.com/dtn7/dtn7-ng/pkg/bpv7"
+	"github.com/dtn7/dtn7-ng/pkg/cla/dummy_cla"
 
 	"github.com/dtn7/dtn7-ng/pkg/util"
 	log "github.com/sirupsen/logrus"
@@ -10,11 +12,27 @@ import (
 
 // Manager keeps track of all active CLAs
 type Manager struct {
-	stateMutex   sync.RWMutex
-	receivers    []ConvergenceReceiver
-	senders      []ConvergenceSender
+	stateMutex sync.RWMutex
+	receivers  []ConvergenceReceiver
+	senders    []ConvergenceSender
+	// pendingStart contains CLAs which are in the process of being started.
+	// Since startup may fail, we don't directly add them to  the senders or receivers list
 	pendingStart []Convergence
-	listeners    []ConvergenceListener
+	// listeners run in the background and wait for incoming connections
+	// They then need to spawn a new CLA and pass it to the manager's register-method
+	listeners []ConvergenceListener
+
+	// receiveCallback will be called for every received bundle
+	// This is necessary since we can't directly import either the store or processing module without creating an import loop
+	receiveCallback func(bundle *bpv7.Bundle)
+
+	// connectCallback is called whenever a new peer connects.
+	// This is necessary since we can't import the routing-module without creating an import loop
+	connectCallback func(eid bpv7.EndpointID)
+
+	// disconnectCallback is called whenever a new peer disconnects.
+	// This is necessary since we can't import the routing-module without creating an import loop
+	disconnectCallback func(eid bpv7.EndpointID)
 }
 
 // managerSingleton is the singleton object which should always be used for manager access
@@ -24,23 +42,26 @@ var managerSingleton *Manager
 // InitialiseCLAManager initialises the manager-singleton
 // To access Singleton-instance, use GetManagerSingleton
 // Further calls to this function after initialisation will return a util.AlreadyInitialised-error
-func InitialiseCLAManager(listeners []ListenerConfig) error {
+func InitialiseCLAManager(listeners []ListenerConfig, receiveCallback func(bundle *bpv7.Bundle), connectCallback func(eid bpv7.EndpointID), disconnectCallback func(eid bpv7.EndpointID)) error {
 	if managerSingleton != nil {
 		return util.NewAlreadyInitialisedError("CLA Manager")
 	}
 
 	manager := Manager{
-		receivers:    make([]ConvergenceReceiver, 0, 10),
-		senders:      make([]ConvergenceSender, 0, 10),
-		pendingStart: make([]Convergence, 0, 10),
-		listeners:    make([]ConvergenceListener, 0, 10),
+		receivers:          make([]ConvergenceReceiver, 0, 10),
+		senders:            make([]ConvergenceSender, 0, 10),
+		pendingStart:       make([]Convergence, 0, 10),
+		listeners:          make([]ConvergenceListener, 0, 10),
+		receiveCallback:    receiveCallback,
+		connectCallback:    connectCallback,
+		disconnectCallback: disconnectCallback,
 	}
 	managerSingleton = &manager
 	return managerSingleton.startListeners(listeners)
 }
 
 // GetManagerSingleton returns the manager singleton-instance.
-// Attempting to call this function before store initialisation will cause the program to panic.
+// Attempting to call this function before manager initialisation will cause the program to panic.
 func GetManagerSingleton() *Manager {
 	if managerSingleton == nil {
 		log.Fatalf("Attempting to access an uninitialised manager. This must never happen!")
@@ -155,9 +176,21 @@ func (manager *Manager) registerAsync(cla Convergence) {
 	manager.pendingStart = pending
 }
 
+// NotifyReceive is to be called by CLAs when they have received (and successfully unmarshalled) a bundle.
+// This method spawns a new goroutine to handle the bundle asynchronously
+func (manager *Manager) NotifyReceive(bundle *bpv7.Bundle) {
+	go manager.receiveCallback(bundle)
+}
+
+// NotifyConnect is to be called by a CLA if it has successfully stared AND is a sender AND is aware of its neighbours EndpointID
+// THis information is passed on to the routing algorithm asynchronously
+func (manager *Manager) NotifyConnect(peerID bpv7.EndpointID) {
+	go manager.connectCallback(peerID)
+}
+
 // NotifyDisconnect is to be called by a CLA if it notices that it has lost its connection
-// Will remove the CLA from either or both of the manager's lists
-// This method is thread-safe
+// Will remove the CLA from either or both of the manager's lists.
+// This method is thread-safe.
 func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	manager.stateMutex.Lock()
 	defer manager.stateMutex.Unlock()
@@ -173,6 +206,8 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	}
 
 	if sender, ok := cla.(ConvergenceSender); ok {
+		go manager.disconnectCallback(sender.GetPeerEndpointID())
+
 		newSenders := make([]ConvergenceSender, len(manager.senders))
 		for _, registeredSender := range manager.senders {
 			if sender.Address() != registeredSender.Address() {
