@@ -27,7 +27,7 @@ func BundleForwarding(bundleDescriptor *store.BundleDescriptor) error {
 
 	// Step 2: determine if contraindicated - whatever that means
 	// Step 2.1: Call routing algorithm(?)
-	forwardToPeers := routing.AlgorithmSingleton.SelectPeersForForwarding(bundleDescriptor)
+	forwardToPeers := routing.GetAlgorithmSingleton().SelectPeersForForwarding(bundleDescriptor)
 
 	// Step 3: if contraindicated, call `contraindicateBundle`, and return
 	if len(forwardToPeers) == 0 {

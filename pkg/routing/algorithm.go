@@ -1,8 +1,10 @@
 package routing
 
 import (
+	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/store"
+	log "github.com/sirupsen/logrus"
 )
 
 type AlgorithmEnum int
@@ -23,15 +25,24 @@ type Algorithm interface {
 	SelectPeersForForwarding(descriptor *store.BundleDescriptor) (peers []cla.ConvergenceSender)
 
 	// NotifyPeerAppeared notifies the Algorithm about a new peer.
-	NotifyPeerAppeared(peer cla.Convergence)
+	NotifyPeerAppeared(peer bpv7.EndpointID)
 
 	// NotifyPeerDisappeared notifies the Algorithm about the
 	// disappearance of a peer.
-	NotifyPeerDisappeared(peer cla.Convergence)
+	NotifyPeerDisappeared(peer bpv7.EndpointID)
 }
 
-var AlgorithmSingleton Algorithm
+var algorithmSingleton Algorithm
 
 func InitialiseAlgorithm(algorithm AlgorithmEnum) error {
 	return nil
+}
+
+// GetAlgorithmSingleton returns the routing algorithm singleton-instance.
+// Attempting to call this function before algorithm initialisation will cause the program to panic.
+func GetAlgorithmSingleton() Algorithm {
+	if algorithmSingleton == nil {
+		log.Fatalf("Attempting to access an uninitialised manager. This must never happen!")
+	}
+	return algorithmSingleton
 }
