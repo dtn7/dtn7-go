@@ -6,6 +6,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/cla"
+	"github.com/dtn7/dtn7-ng/pkg/routing"
 )
 
 type ConfigError struct {
@@ -26,17 +27,27 @@ func (e *ConfigError) Unwrap() error { return e.cause }
 type config struct {
 	NodeID   bpv7.EndpointID
 	Store    storeConfig
+	Routing  routingConfig
 	Listener []cla.ListenerConfig
 }
 
 type tomlConfig struct {
 	NodeID   string `toml:"node_id"`
 	Store    storeConfig
+	Routing  tomlRoutingConfig
 	Listener []listenerTomlConfig
 }
 
 type storeConfig struct {
 	Path string
+}
+
+type tomlRoutingConfig struct {
+	Algorithm string
+}
+
+type routingConfig struct {
+	Algorithm routing.AlgorithmEnum
 }
 
 type listenerTomlConfig struct {
@@ -62,6 +73,13 @@ func parse(filename string) (config, error) {
 	conf.NodeID = nodeID
 
 	conf.Store = tomlConf.Store
+
+	algorithm, err := routing.AlgorithmEnumFromString(tomlConf.Routing.Algorithm)
+	if err != nil {
+		return config{}, NewConfigError("Error parsing routing Algorithm", err)
+	}
+
+	conf.Routing = routingConfig{Algorithm: algorithm}
 
 	for _, listener := range tomlConf.Listener {
 		claType, err := cla.TypeFromString(listener.Type)

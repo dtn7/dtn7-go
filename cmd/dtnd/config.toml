@@ -3,6 +3,10 @@ node_id = "dtn://test/"
 [Store]
 path = "/tmp/dtn_store"
 
-[[Listener]]
-type = "QUICL"
-address = ":35039"
+# Specify routing algorithm
+[Routing]
+algorithm = "epidemic"
+
+#[[Listener]]
+#type = "QUICL"
+#address = ":35039"

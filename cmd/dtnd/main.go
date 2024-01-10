@@ -33,4 +33,9 @@ func main() {
 		log.WithField("error", err).Fatal("Error initialising CLAs")
 	}
 	defer cla.GetManagerSingleton().Shutdown()
+
+	err = routing.InitialiseAlgorithm(conf.Routing.Algorithm)
+	if err != nil {
+		log.WithField("error", err).Fatal("Error initialising routing algorithm")
+	}
 }

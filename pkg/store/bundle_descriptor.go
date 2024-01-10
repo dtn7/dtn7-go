@@ -23,7 +23,7 @@ type BundleDescriptor struct {
 	// bundle's ID in string-form. Used as the database primary-key. Return-value of ID.String()
 	IDString string `badgerhold:"key"`
 	// should this bundle be retained, i.e. protected from deletion
-	// bundle's with contraints are also currently being processed
+	// bundle's with constraints are also currently being processed
 	Retain bool
 	// TTL after which the bundle will be deleted - assuming Retain == false
 	Expires time.Time

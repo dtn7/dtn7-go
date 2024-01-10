@@ -1,17 +1,31 @@
 package routing
 
 import (
+	"fmt"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/store"
-	log "github.com/sirupsen/logrus"
+	"github.com/dtn7/dtn7-ng/pkg/util"
 )
 
 type AlgorithmEnum int
 
 const (
-	Epidemic int = iota
+	Epidemic AlgorithmEnum = iota
 )
+
+func AlgorithmEnumFromString(name string) (AlgorithmEnum, error) {
+	switch name = strings.ToLower(name); name {
+	case "epidemic":
+		return Epidemic, nil
+	default:
+		return 0, fmt.Errorf("%s is not a valid algorithm name", name)
+	}
+}
 
 // Algorithm is an interface to specify routing algorithms for delay-tolerant networks.
 type Algorithm interface {
@@ -34,8 +48,28 @@ type Algorithm interface {
 
 var algorithmSingleton Algorithm
 
+type NoSuchAlgorithmError AlgorithmEnum
+
+func (err *NoSuchAlgorithmError) Error() string {
+	return fmt.Sprintf("%d was already initialised", *err)
+}
+
+func NewNoSuchAlgorithmError(algorithm AlgorithmEnum) *NoSuchAlgorithmError {
+	err := NoSuchAlgorithmError(algorithm)
+	return &err
+}
+
 func InitialiseAlgorithm(algorithm AlgorithmEnum) error {
-	return nil
+	if algorithmSingleton != nil {
+		return util.NewAlreadyInitialisedError("Routing Algorithm")
+	}
+
+	if algorithm == Epidemic {
+		algorithmSingleton = NewEpidemicRouting()
+		return nil
+	}
+
+	return NewNoSuchAlgorithmError(algorithm)
 }
 
 // GetAlgorithmSingleton returns the routing algorithm singleton-instance.
@@ -45,4 +79,29 @@ func GetAlgorithmSingleton() Algorithm {
 		log.Fatalf("Attempting to access an uninitialised manager. This must never happen!")
 	}
 	return algorithmSingleton
+}
+
+// filterCLAs filters the nodes which already received a Bundle.
+// It returns a list of unused ConvergenceSenders.
+func filterCLAs(bundleDescriptor *store.BundleDescriptor, clas []cla.ConvergenceSender) (filtered []cla.ConvergenceSender) {
+	filtered = make([]cla.ConvergenceSender, 0, len(clas))
+
+	sentEids := bundleDescriptor.GetAlreadySent()
+
+	for _, cs := range clas {
+		skip := false
+
+		for _, eid := range sentEids {
+			if cs.GetPeerEndpointID() == eid {
+				skip = true
+				break
+			}
+		}
+
+		if !skip {
+			filtered = append(filtered, cs)
+		}
+	}
+
+	return
 }
