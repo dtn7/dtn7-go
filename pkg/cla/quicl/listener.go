@@ -18,34 +18,24 @@ import (
 type Listener struct {
 	listenAddress string
 	endpointID    bpv7.EndpointID
-	manager       *cla.Manager
-	listener      *quic.Listener
+	quicListener  *quic.Listener
+	running       bool
+
+	registerCallback func(id bpv7.EndpointID)
 }
 
 func NewQUICListener(listenAddress string, endpointID bpv7.EndpointID) *Listener {
 	return &Listener{
 		listenAddress: listenAddress,
 		endpointID:    endpointID,
-		manager:       nil,
-		listener:      nil,
+		quicListener:  nil,
+		running:       false,
 	}
 }
 
-/**
-Methods for Convergable interface
-*/
-
 func (listener *Listener) Close() error {
 	log.WithField("address", listener.listenAddress).Info("Shutting ourselves down")
-	return listener.listener.Close()
-}
-
-/**
-Methods for ConvergenceProvider interface
-*/
-
-func (listener *Listener) RegisterManager(manager *cla.Manager) {
-	listener.manager = manager
+	return listener.quicListener.Close()
 }
 
 func (listener *Listener) Start() error {
@@ -56,10 +46,20 @@ func (listener *Listener) Start() error {
 		return err
 	}
 
-	listener.listener = lst
+	listener.quicListener = lst
 	go listener.handle()
 
+	listener.running = true
+
 	return nil
+}
+
+func (listener *Listener) Running() bool {
+	return listener.running
+}
+
+func (listener *Listener) Address() string {
+	return listener.listenAddress
 }
 
 /*
@@ -70,7 +70,7 @@ func (listener *Listener) handle() {
 	log.WithField("address", listener.listenAddress).Info("Listening for QUICL connections")
 
 	for {
-		session, err := listener.listener.Accept(context.Background())
+		session, err := listener.quicListener.Accept(context.Background())
 		if err != nil {
 			if !(errors.Is(err, context.DeadlineExceeded)) {
 				if err.Error() == "quic: Server closed" {
@@ -89,7 +89,7 @@ func (listener *Listener) handle() {
 				"peer":    session.RemoteAddr(),
 			}).Info("QUICL listener accepted new connection")
 			endpoint := NewListenerEndpoint(listener.endpointID, session)
-			go listener.manager.Register(endpoint)
+			cla.GetManagerSingleton().Register(endpoint)
 		}
 	}
 }

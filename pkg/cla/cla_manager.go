@@ -4,8 +4,6 @@ import (
 	"sync"
 
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/cla/dummy_cla"
-
 	"github.com/dtn7/dtn7-ng/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
@@ -42,7 +40,7 @@ var managerSingleton *Manager
 // InitialiseCLAManager initialises the manager-singleton
 // To access Singleton-instance, use GetManagerSingleton
 // Further calls to this function after initialisation will return a util.AlreadyInitialised-error
-func InitialiseCLAManager(listeners []ListenerConfig, receiveCallback func(bundle *bpv7.Bundle), connectCallback func(eid bpv7.EndpointID), disconnectCallback func(eid bpv7.EndpointID)) error {
+func InitialiseCLAManager(receiveCallback func(bundle *bpv7.Bundle), connectCallback func(eid bpv7.EndpointID), disconnectCallback func(eid bpv7.EndpointID)) error {
 	if managerSingleton != nil {
 		return util.NewAlreadyInitialisedError("CLA Manager")
 	}
@@ -57,7 +55,7 @@ func InitialiseCLAManager(listeners []ListenerConfig, receiveCallback func(bundl
 		disconnectCallback: disconnectCallback,
 	}
 	managerSingleton = &manager
-	return managerSingleton.startListeners(listeners)
+	return nil
 }
 
 // GetManagerSingleton returns the manager singleton-instance.
@@ -218,23 +216,14 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	}
 }
 
-func (manager *Manager) startListeners(listeners []ListenerConfig) error {
-	for _, lst := range listeners {
-		var listener ConvergenceListener
-		switch lst.Type {
-		case Dummy:
-			listener = dummy_cla.NewDummyListener(lst.Address)
-		default:
-			return NewUnsupportedCLATypeError(lst.Type)
-		}
-
-		err := listener.Start()
-		if err != nil {
-			return err
-		}
-
-		manager.listeners = append(manager.listeners, listener)
+func (manager *Manager) RegisterListener(listener ConvergenceListener) error {
+	err := listener.Start()
+	if err != nil {
+		return err
 	}
+
+	manager.listeners = append(manager.listeners, listener)
+
 	return nil
 }
 

@@ -8,6 +8,8 @@ package cla
 import (
 	"errors"
 	"fmt"
+
+	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 )
 
 // CLAType is one of the supported Convergence Layer Adaptors
@@ -80,6 +82,7 @@ func (err *UnsupportedCLATypeError) Error() string {
 }
 
 type ListenerConfig struct {
-	Type    CLAType
-	Address string
+	Type       CLAType
+	Address    string
+	EndpointId bpv7.EndpointID
 }

@@ -86,7 +86,7 @@ func parse(filename string) (config, error) {
 		if err != nil {
 			return config{}, NewConfigError("Error parsing Listener Type", err)
 		}
-		conf.Listener = append(conf.Listener, cla.ListenerConfig{Type: claType, Address: listener.Address})
+		conf.Listener = append(conf.Listener, cla.ListenerConfig{Type: claType, Address: listener.Address, EndpointId: nodeID})
 	}
 
 	return conf, nil
