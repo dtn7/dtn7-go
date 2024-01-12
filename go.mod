@@ -5,12 +5,14 @@ go 1.20
 require (
 	github.com/BurntSushi/toml v1.3.2
 	github.com/dtn7/cboring v0.1.5
+	github.com/gorilla/mux v1.8.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/howeyc/crc16 v0.0.0-20171223171357-2b2a61e366a6
 	github.com/quic-go/quic-go v0.38.0
 	github.com/schollz/peerdiscovery v1.7.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/timshannon/badgerhold/v4 v4.0.2
+	golang.org/x/sys v0.8.0
 	pgregory.net/rapid v1.0.0
 )
 
@@ -33,14 +35,12 @@ require (
 	github.com/klauspost/compress v1.13.1 // indirect
 	github.com/onsi/ginkgo/v2 v2.9.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/quic-go/qtls-go1-19 v0.3.2 // indirect
 	github.com/quic-go/qtls-go1-20 v0.3.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/crypto v0.4.0 // indirect
 	golang.org/x/exp v0.0.0-20221205204356-47842c84f3db // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.10.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
 )

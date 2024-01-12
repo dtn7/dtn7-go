@@ -1,19 +1,21 @@
 package main
 
 import (
+	"github.com/gorilla/mux"
+	"net/http"
 	"os"
+	"time"
 
+	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-ng/pkg/application_agent"
+	"github.com/dtn7/dtn7-ng/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/cla/dummy_cla"
 	"github.com/dtn7/dtn7-ng/pkg/cla/mtcp"
 	"github.com/dtn7/dtn7-ng/pkg/cla/quicl"
-
 	"github.com/dtn7/dtn7-ng/pkg/processing"
 	"github.com/dtn7/dtn7-ng/pkg/routing"
-
-	"github.com/dtn7/dtn7-ng/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/store"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -65,5 +67,30 @@ func main() {
 				"type":  lstConf,
 			}).Fatal("Error starting convergence listener")
 		}
+	}
+
+	err = application_agent.InitialiseApplicationAgentManager()
+	if err != nil {
+		log.WithField("error", err).Fatal("Error initialising Application Agent Manager")
+	}
+	defer application_agent.GetManagerSingleton().Shutdown()
+
+	r := mux.NewRouter()
+	restRouter := r.PathPrefix("/rest").Subrouter()
+	restAgent := application_agent.NewRestAgent(restRouter)
+	err = application_agent.GetManagerSingleton().RegisterAgent(restAgent)
+	if err != nil {
+		log.WithError(err).Fatal("Error registering REST application agent")
+	}
+
+	httpServer := &http.Server{
+		Addr:              conf.Agents.REST.Address,
+		Handler:           r,
+		ReadHeaderTimeout: 60 * time.Second,
+	}
+
+	err = httpServer.ListenAndServe()
+	if err != nil {
+		log.WithError(err).Fatal("Error with agent web server")
 	}
 }

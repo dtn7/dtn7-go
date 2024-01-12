@@ -7,6 +7,11 @@ path = "/tmp/dtn_store"
 [Routing]
 algorithm = "epidemic"
 
+[Agents]
+[Agents.REST]
+# Address to bind the server to.
+address = "localhost:8080"
+
 #[[Listener]]
 #type = "QUICL"
 #address = ":35039"

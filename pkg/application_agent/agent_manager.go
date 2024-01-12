@@ -3,24 +3,23 @@ package application_agent
 import (
 	"sync"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/store"
 	"github.com/hashicorp/go-multierror"
-	log "github.com/sirupsen/logrus"
 )
 
 type Manager struct {
 	stateMutex sync.RWMutex
 	agents     []ApplicationAgent
-	endpoints  map[bpv7.EndpointID][]ApplicationAgent
 }
 
 var managerSingleton *Manager
 
 func InitialiseApplicationAgentManager() error {
 	manager := Manager{
-		agents:    make([]ApplicationAgent, 0, 10),
-		endpoints: make(map[bpv7.EndpointID][]ApplicationAgent),
+		agents: make([]ApplicationAgent, 0, 10),
 	}
 	managerSingleton = &manager
 	return nil
@@ -40,36 +39,29 @@ func (manager *Manager) GetEndpoints() []bpv7.EndpointID {
 	manager.stateMutex.RLock()
 	defer manager.stateMutex.RUnlock()
 
-	endpoints := make([]bpv7.EndpointID, len(manager.endpoints))
-	i := 0
-	for eid := range manager.endpoints {
-		endpoints[i] = eid
-		i++
+	endpoints := make([]bpv7.EndpointID, 0)
+
+	for _, agent := range manager.agents {
+		endpoints = append(endpoints, agent.Endpoints()...)
 	}
 
 	return endpoints
 }
 
-func (manager *Manager) RegisterEndpoint(newID bpv7.EndpointID, newAgent ApplicationAgent) error {
+func (manager *Manager) RegisterAgent(newAgent ApplicationAgent) error {
 	manager.stateMutex.Lock()
 	defer manager.stateMutex.Unlock()
 
-	agents, exists := manager.endpoints[newID]
 	present := false
-	if !exists {
-		agents = make([]ApplicationAgent, 0, 1)
-	} else {
-		for _, agent := range agents {
-			if agent == newAgent {
-				present = true
-				break
-			}
+	for _, agent := range manager.agents {
+		if agent == newAgent {
+			present = true
+			break
 		}
 	}
 
 	if !present {
-		agents = append(agents, newAgent)
-		manager.endpoints[newID] = agents
+		manager.agents = append(manager.agents, newAgent)
 	}
 
 	// TODO: check if there are pending bundles for this endpoint ID
@@ -81,19 +73,14 @@ func (manager *Manager) UnregisterEndpoint(id bpv7.EndpointID, removeAgent Appli
 	manager.stateMutex.Lock()
 	defer manager.stateMutex.Unlock()
 
-	agents, exists := manager.endpoints[id]
-	if !exists {
-		return NewNoAgentRegisteredError(id)
-	}
-
-	remainingAgents := make([]ApplicationAgent, 0, len(agents))
-	for _, agent := range agents {
+	remainingAgents := make([]ApplicationAgent, 0, len(manager.agents))
+	for _, agent := range manager.agents {
 		if agent != removeAgent {
 			remainingAgents = append(remainingAgents, agent)
 		}
 	}
 
-	manager.endpoints[id] = remainingAgents
+	manager.agents = remainingAgents
 	return nil
 }
 
@@ -101,16 +88,29 @@ func (manager *Manager) Delivery(bundleDescriptor *store.BundleDescriptor) error
 	manager.stateMutex.RLock()
 	defer manager.stateMutex.RUnlock()
 
-	agents, exists := manager.endpoints[bundleDescriptor.Destination]
-	if !exists {
-		return NewNoAgentRegisteredError(bundleDescriptor.Destination)
-	}
-
 	var mErr error
-	for _, agent := range agents {
+	for _, agent := range manager.agents {
 		err := agent.Deliver(bundleDescriptor)
 		mErr = multierror.Append(mErr, err)
 	}
 
 	return mErr
+}
+
+func (manager *Manager) Shutdown() {
+	manager.stateMutex.RLock()
+	defer manager.stateMutex.RUnlock()
+
+	for _, agent := range manager.agents {
+		agent.Shutdown()
+	}
+
+	manager.agents = make([]ApplicationAgent, 0)
+
+	managerSingleton = nil
+}
+
+func (manager *Manager) Send(bndl *bpv7.Bundle) error {
+	_, err := store.GetStoreSingleton().InsertBundle(bndl)
+	return err
 }

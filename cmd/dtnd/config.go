@@ -29,6 +29,7 @@ type config struct {
 	Store    storeConfig
 	Routing  routingConfig
 	Listener []cla.ListenerConfig
+	Agents   agentsConfig
 }
 
 type tomlConfig struct {
@@ -36,6 +37,7 @@ type tomlConfig struct {
 	Store    storeConfig
 	Routing  tomlRoutingConfig
 	Listener []listenerTomlConfig
+	Agents   agentsConfig
 }
 
 type storeConfig struct {
@@ -52,6 +54,16 @@ type routingConfig struct {
 
 type listenerTomlConfig struct {
 	Type    string
+	Address string
+}
+
+// agentsConfig describes the ApplicationAgents/Agent-configuration block.
+type agentsConfig struct {
+	REST agentsRESTConfig
+}
+
+// agentsWebserverConfig describes the nested "Webserver" configuration for agents.
+type agentsRESTConfig struct {
 	Address string
 }
 
@@ -88,6 +100,8 @@ func parse(filename string) (config, error) {
 		}
 		conf.Listener = append(conf.Listener, cla.ListenerConfig{Type: claType, Address: listener.Address, EndpointId: nodeID})
 	}
+
+	conf.Agents = tomlConf.Agents
 
 	return conf, nil
 }
