@@ -71,7 +71,7 @@ func (manager *Manager) RegisterAgent(newAgent ApplicationAgent) error {
 	return nil
 }
 
-func (manager *Manager) UnregisterEndpoint(id bpv7.EndpointID, removeAgent ApplicationAgent) error {
+func (manager *Manager) UnregisterEndpoint(removeAgent ApplicationAgent) error {
 	manager.stateMutex.Lock()
 	defer manager.stateMutex.Unlock()
 
