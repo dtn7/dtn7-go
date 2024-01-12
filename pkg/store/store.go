@@ -93,6 +93,21 @@ func (bst *BundleStore) GetWithConstraint(constraint Constraint) ([]*BundleDescr
 	return ptrs, nil
 }
 
+func (bst *BundleStore) GetDispatchable() ([]*BundleDescriptor, error) {
+	bundles := make([]BundleDescriptor, 0)
+	err := bst.metadataStore.Find(&bundles, badgerhold.Where("Dispatch").Eq(true))
+	if err != nil {
+		return nil, err
+	}
+
+	ptrs := make([]*BundleDescriptor, len(bundles))
+	for i, bndl := range bundles {
+		ptrs[i] = &bndl
+	}
+
+	return ptrs, nil
+}
+
 func (bst *BundleStore) loadEntireBundle(filename string) (*bpv7.Bundle, error) {
 	path := filepath.Join(bst.bundleDirectory, filename)
 	f, err := os.Open(path)
@@ -119,6 +134,7 @@ func (bst *BundleStore) insertNewBundle(bundle *bpv7.Bundle) (*BundleDescriptor,
 		AlreadySentTo:        []bpv7.EndpointID{bst.nodeID},
 		RetentionConstraints: []Constraint{DispatchPending},
 		Retain:               false,
+		Dispatch:             true,
 		Expires:              bundle.PrimaryBlock.CreationTimestamp.DtnTime().Time().Add(lifetimeDuration),
 		SerialisedFileName:   serialisedFileName,
 		Bundle:               nil,

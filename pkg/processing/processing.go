@@ -126,7 +126,7 @@ func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.Converg
 }
 
 func DispatchPending() {
-	bndls, err := store.GetStoreSingleton().GetWithConstraint(store.DispatchPending)
+	bndls, err := store.GetStoreSingleton().GetDispatchable()
 	if err != nil {
 		log.WithError(err).Error("Error dispatching pending bundles")
 	}

@@ -25,6 +25,8 @@ type BundleDescriptor struct {
 	// should this bundle be retained, i.e. protected from deletion
 	// bundle's with constraints are also currently being processed
 	Retain bool
+	// should this bundle be dispatched?
+	Dispatch bool
 	// TTL after which the bundle will be deleted - assuming Retain == false
 	Expires time.Time
 	// filename of the serialised bundle on-disk
@@ -67,6 +69,7 @@ func (bd *BundleDescriptor) AddConstraint(constraint Constraint) error {
 
 	bd.RetentionConstraints = append(bd.RetentionConstraints, constraint)
 	bd.Retain = true
+	bd.Dispatch = constraint != ForwardPending
 	return GetStoreSingleton().updateBundleMetadata(bd)
 }
 
@@ -79,6 +82,7 @@ func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) error {
 	}
 	bd.RetentionConstraints = constraints
 	bd.Retain = len(bd.RetentionConstraints) > 0
+	bd.Dispatch = constraint != ForwardPending
 	return GetStoreSingleton().updateBundleMetadata(bd)
 }
 
