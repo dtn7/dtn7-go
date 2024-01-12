@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-co-op/gocron/v2"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-ng/pkg/application_agent"
@@ -74,6 +75,24 @@ func main() {
 		log.WithField("error", err).Fatal("Error initialising Application Agent Manager")
 	}
 	defer application_agent.GetManagerSingleton().Shutdown()
+
+	s, err := gocron.NewScheduler()
+	if err != nil {
+		log.WithError(err).Fatal("Error initializing cron")
+	}
+	_, err = s.NewJob(
+		gocron.DurationJob(
+			1*time.Second,
+		),
+		gocron.NewTask(
+			processing.DispatchPending,
+		),
+	)
+	if err != nil {
+		log.WithError(err).Fatal("Error initializing dispatching cronjob")
+	}
+	s.Start()
+	defer s.Shutdown()
 
 	r := mux.NewRouter()
 	restRouter := r.PathPrefix("/rest").Subrouter()

@@ -124,3 +124,20 @@ func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.Converg
 		// TODO: send status report
 	}
 }
+
+func DispatchPending() {
+	bndls, err := store.GetStoreSingleton().GetWithConstraint(store.DispatchPending)
+	if err != nil {
+		log.WithError(err).Error("Error dispatching pending bundles")
+	}
+
+	for _, bndl := range bndls {
+		err = BundleForwarding(bndl)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"error":  err,
+				"bundle": bndl.ID,
+			}).Error("Error forwarding bundle")
+		}
+	}
+}

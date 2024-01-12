@@ -78,6 +78,21 @@ func (bst *BundleStore) LoadBundleDescriptor(bundleId bpv7.BundleID) (*BundleDes
 	return &bd, err
 }
 
+func (bst *BundleStore) GetWithConstraint(constraint Constraint) ([]*BundleDescriptor, error) {
+	bundles := make([]BundleDescriptor, 0)
+	err := bst.metadataStore.Find(&bundles, badgerhold.Where("RetentionConstraints").Contains(constraint))
+	if err != nil {
+		return nil, err
+	}
+
+	ptrs := make([]*BundleDescriptor, len(bundles))
+	for i, bndl := range bundles {
+		ptrs[i] = &bndl
+	}
+
+	return ptrs, nil
+}
+
 func (bst *BundleStore) loadEntireBundle(filename string) (*bpv7.Bundle, error) {
 	path := filepath.Join(bst.bundleDirectory, filename)
 	f, err := os.Open(path)
