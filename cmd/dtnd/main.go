@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/dtn7/dtn7-ng/pkg/discovery"
 	"github.com/gorilla/mux"
 	"net/http"
 	"os"
@@ -28,6 +29,9 @@ func main() {
 	if err != nil {
 		log.WithField("error", err).Fatal("Config error")
 	}
+
+	//TODO: set log level in config
+	log.SetLevel(log.DebugLevel)
 
 	err = store.InitialiseStore(conf.NodeID, conf.Store.Path)
 	if err != nil {
@@ -69,6 +73,14 @@ func main() {
 			}).Fatal("Error starting convergence listener")
 		}
 	}
+
+	err = discovery.InitialiseManager(conf.NodeID, conf.Discovery, time.Second, true, false)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+		}).Fatal("Error starting discovery manager")
+	}
+	defer discovery.GetManagerSingleton().Close()
 
 	err = application_agent.InitialiseApplicationAgentManager(processing.ReceiveBundle)
 	if err != nil {

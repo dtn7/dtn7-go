@@ -7,6 +7,8 @@ package discovery
 
 import (
 	"fmt"
+	"github.com/dtn7/dtn7-ng/pkg/cla/mtcp"
+	"github.com/dtn7/dtn7-ng/pkg/cla/quicl"
 	"time"
 
 	"github.com/dtn7/dtn7-ng/pkg/util"
@@ -21,8 +23,7 @@ import (
 
 // Manager publishes and receives Announcements.
 type Manager struct {
-	NodeId       bpv7.EndpointID
-	RegisterFunc func(cType cla.CLAType, address string, peerID bpv7.EndpointID) `json:"-"`
+	NodeId bpv7.EndpointID
 
 	stopChan4 chan struct{}
 	stopChan6 chan struct{}
@@ -31,7 +32,7 @@ type Manager struct {
 var managerSingleton *Manager
 
 func InitialiseManager(
-	nodeId bpv7.EndpointID, registerFunc func(cType cla.CLAType, address string, peerID bpv7.EndpointID),
+	nodeId bpv7.EndpointID,
 	announcements []Announcement, announcementInterval time.Duration,
 	ipv4, ipv6 bool) error {
 
@@ -40,8 +41,7 @@ func InitialiseManager(
 	}
 
 	var manager = &Manager{
-		NodeId:       nodeId,
-		RegisterFunc: registerFunc,
+		NodeId: nodeId,
 	}
 	if ipv4 {
 		manager.stopChan4 = make(chan struct{})
@@ -112,6 +112,15 @@ func InitialiseManager(
 	return nil
 }
 
+// GetManagerSingleton returns the manager singleton-instance.
+// Attempting to call this function before manager initialisation will cause the program to panic.
+func GetManagerSingleton() *Manager {
+	if managerSingleton == nil {
+		log.Fatalf("Attempting to access an uninitialised manager. This must never happen!")
+	}
+	return managerSingleton
+}
+
 func (manager *Manager) notify6(discovered peerdiscovery.Discovered) {
 	discovered.Address = fmt.Sprintf("[%s]", discovered.Address)
 
@@ -145,7 +154,17 @@ func (manager *Manager) handleDiscovery(announcement Announcement, addr string) 
 		"message":   announcement,
 	}).Debug("Peer discovery received a message")
 
-	manager.RegisterFunc(announcement.Type, fmt.Sprintf("%s:%d", addr, announcement.Port), announcement.Endpoint)
+	var conv cla.Convergence
+	switch announcement.Type {
+	case cla.MTCP:
+		conv = mtcp.NewMTCPClient(fmt.Sprintf("%s:%d", addr, announcement.Port), announcement.Endpoint)
+	case cla.QUICL:
+		conv = quicl.NewDialerEndpoint(fmt.Sprintf("%s:%d", addr, announcement.Port), announcement.Endpoint)
+	default:
+		log.WithField("cType", announcement.Type).Error("Invalid cType")
+		return
+	}
+	cla.GetManagerSingleton().Register(conv)
 }
 
 // Close this Manager.

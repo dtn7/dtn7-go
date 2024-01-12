@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/dtn7/dtn7-ng/pkg/discovery"
+	"net"
+	"strconv"
 
 	"github.com/BurntSushi/toml"
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
@@ -25,11 +28,12 @@ func (e *ConfigError) Error() string {
 func (e *ConfigError) Unwrap() error { return e.cause }
 
 type config struct {
-	NodeID   bpv7.EndpointID
-	Store    storeConfig
-	Routing  routingConfig
-	Listener []cla.ListenerConfig
-	Agents   agentsConfig
+	NodeID    bpv7.EndpointID
+	Store     storeConfig
+	Routing   routingConfig
+	Listener  []cla.ListenerConfig
+	Agents    agentsConfig
+	Discovery []discovery.Announcement
 }
 
 type tomlConfig struct {
@@ -67,6 +71,16 @@ type agentsRESTConfig struct {
 	Address string
 }
 
+func parseListenPort(endpoint string) (port int, err error) {
+	var portStr string
+	_, portStr, err = net.SplitHostPort(endpoint)
+	if err != nil {
+		return
+	}
+	port, err = strconv.Atoi(portStr)
+	return
+}
+
 func parse(filename string) (config, error) {
 	var tomlConf tomlConfig
 	if _, err := toml.DecodeFile(filename, &tomlConf); err != nil {
@@ -99,6 +113,12 @@ func parse(filename string) (config, error) {
 			return config{}, NewConfigError("Error parsing Listener Type", err)
 		}
 		conf.Listener = append(conf.Listener, cla.ListenerConfig{Type: claType, Address: listener.Address, EndpointId: nodeID})
+
+		port, err := parseListenPort(listener.Address)
+		if err != nil {
+			return config{}, NewConfigError("Error parsing listener port", err)
+		}
+		conf.Discovery = append(conf.Discovery, discovery.Announcement{Type: claType, Port: uint(port), Endpoint: nodeID})
 	}
 
 	conf.Agents = tomlConf.Agents
