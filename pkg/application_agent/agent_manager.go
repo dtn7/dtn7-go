@@ -11,15 +11,17 @@ import (
 )
 
 type Manager struct {
-	stateMutex sync.RWMutex
-	agents     []ApplicationAgent
+	stateMutex   sync.RWMutex
+	agents       []ApplicationAgent
+	sendCallback func(bundle *bpv7.Bundle)
 }
 
 var managerSingleton *Manager
 
-func InitialiseApplicationAgentManager() error {
+func InitialiseApplicationAgentManager(sendCallback func(bundle *bpv7.Bundle)) error {
 	manager := Manager{
-		agents: make([]ApplicationAgent, 0, 10),
+		agents:       make([]ApplicationAgent, 0, 10),
+		sendCallback: sendCallback,
 	}
 	managerSingleton = &manager
 	return nil

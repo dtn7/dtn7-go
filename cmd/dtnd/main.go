@@ -70,7 +70,7 @@ func main() {
 		}
 	}
 
-	err = application_agent.InitialiseApplicationAgentManager()
+	err = application_agent.InitialiseApplicationAgentManager(processing.ReceiveBundle)
 	if err != nil {
 		log.WithField("error", err).Fatal("Error initialising Application Agent Manager")
 	}
