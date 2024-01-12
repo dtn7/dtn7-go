@@ -56,7 +56,7 @@ func NewListenerEndpoint(id bpv7.EndpointID, session quic.Connection) *Endpoint 
 	}
 }
 
-func NewDialerEndpoint(peerAddress string, id bpv7.EndpointID, permanent bool) *Endpoint {
+func NewDialerEndpoint(peerAddress string, id bpv7.EndpointID) *Endpoint {
 	return &Endpoint{
 		id:          id,
 		peerAddress: peerAddress,

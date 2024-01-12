@@ -31,8 +31,7 @@ type MTCPClient struct {
 	peer  bpv7.EndpointID
 	mutex sync.Mutex
 
-	permanent bool
-	address   string
+	address string
 
 	stopSyn chan struct{}
 	stopAck chan struct{}
@@ -41,19 +40,18 @@ type MTCPClient struct {
 // NewMTCPClient creates a new MTCPClient, connected to the given address for
 // the registered endpoint ID. The permanent flag indicates if this MTCPClient
 // should never be removed from the core.
-func NewMTCPClient(address string, peer bpv7.EndpointID, permanent bool) *MTCPClient {
+func NewMTCPClient(address string, peer bpv7.EndpointID) *MTCPClient {
 	return &MTCPClient{
-		peer:      peer,
-		permanent: permanent,
-		address:   address,
+		peer:    peer,
+		address: address,
 	}
 }
 
 // NewAnonymousMTCPClient creates a new MTCPClient, connected to the given address.
 // The permanent flag indicates if this MTCPClient should never be removed from
 // the core.
-func NewAnonymousMTCPClient(address string, permanent bool) *MTCPClient {
-	return NewMTCPClient(address, bpv7.DtnNone(), permanent)
+func NewAnonymousMTCPClient(address string) *MTCPClient {
+	return NewMTCPClient(address, bpv7.DtnNone())
 }
 
 func (client *MTCPClient) Activate() (err error) {
@@ -168,10 +166,6 @@ func (client *MTCPClient) GetPeerEndpointID() bpv7.EndpointID {
 
 func (client *MTCPClient) Address() string {
 	return client.address
-}
-
-func (client *MTCPClient) IsPermanent() bool {
-	return client.permanent
 }
 
 func (client *MTCPClient) String() string {
