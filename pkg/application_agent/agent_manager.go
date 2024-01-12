@@ -7,7 +7,6 @@ import (
 
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/store"
-	"github.com/hashicorp/go-multierror"
 )
 
 type Manager struct {
@@ -86,17 +85,20 @@ func (manager *Manager) UnregisterEndpoint(removeAgent ApplicationAgent) error {
 	return nil
 }
 
-func (manager *Manager) Delivery(bundleDescriptor *store.BundleDescriptor) error {
+func (manager *Manager) Delivery(bundleDescriptor *store.BundleDescriptor) {
 	manager.stateMutex.RLock()
 	defer manager.stateMutex.RUnlock()
 
-	var mErr error
 	for _, agent := range manager.agents {
 		err := agent.Deliver(bundleDescriptor)
-		mErr = multierror.Append(mErr, err)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"bundle": bundleDescriptor.ID,
+				"agent":  agent,
+				"error":  err,
+			}).Error("Error delivering bundle")
+		}
 	}
-
-	return mErr
 }
 
 func (manager *Manager) Shutdown() {
@@ -112,7 +114,6 @@ func (manager *Manager) Shutdown() {
 	managerSingleton = nil
 }
 
-func (manager *Manager) Send(bndl *bpv7.Bundle) error {
-	_, err := store.GetStoreSingleton().InsertBundle(bndl)
-	return err
+func (manager *Manager) Send(bndl *bpv7.Bundle) {
+	manager.sendCallback(bndl)
 }

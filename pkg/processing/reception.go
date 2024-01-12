@@ -1,8 +1,6 @@
 package processing
 
 import (
-	"errors"
-
 	"github.com/dtn7/dtn7-ng/pkg/application_agent"
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/routing"
@@ -20,8 +18,8 @@ func ReceiveBundle(bundle *bpv7.Bundle) {
 		return
 	}
 
-	err = application_agent.GetManagerSingleton().Delivery(bundleDescriptor)
-	if err != nil {
+	application_agent.GetManagerSingleton().Delivery(bundleDescriptor)
+	/*if err != nil {
 		var e *application_agent.NoAgentRegisteredError
 		if errors.As(err, &e) {
 			// this is actually normal
@@ -35,7 +33,7 @@ func ReceiveBundle(bundle *bpv7.Bundle) {
 				"error":  err,
 			}).Error("Error delivering bundle")
 		}
-	}
+	}*/
 
 	routing.GetAlgorithmSingleton().NotifyNewBundle(bundleDescriptor)
 }

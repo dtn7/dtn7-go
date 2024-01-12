@@ -265,9 +265,7 @@ func (ra *RestAgent) handleBuild(w http.ResponseWriter, r *http.Request) {
 			"uuid":   buildRequest.UUID,
 			"bundle": b.ID().String(),
 		}).Info("REST client sent bundle")
-		err := GetManagerSingleton().Send(&b)
-		buildResponse.Error = err.Error()
-		log.WithError(err).Warn("Bundle submission error")
+		GetManagerSingleton().Send(&b)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
