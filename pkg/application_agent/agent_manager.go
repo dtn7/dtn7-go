@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
+	"github.com/dtn7/dtn7-ng/pkg/id_keeper"
 	"github.com/dtn7/dtn7-ng/pkg/store"
 )
 
@@ -115,5 +116,7 @@ func (manager *Manager) Shutdown() {
 }
 
 func (manager *Manager) Send(bndl *bpv7.Bundle) {
+	idKeeper := id_keeper.GetIdKeeperSingleton()
+	idKeeper.Update(bndl)
 	manager.sendCallback(bndl)
 }

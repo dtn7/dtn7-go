@@ -1,13 +1,12 @@
 package main
 
 import (
-	"github.com/dtn7/dtn7-ng/pkg/discovery"
-	"github.com/gorilla/mux"
 	"net/http"
 	"os"
 	"time"
 
 	"github.com/go-co-op/gocron/v2"
+	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-ng/pkg/application_agent"
@@ -15,6 +14,8 @@ import (
 	"github.com/dtn7/dtn7-ng/pkg/cla/dummy_cla"
 	"github.com/dtn7/dtn7-ng/pkg/cla/mtcp"
 	"github.com/dtn7/dtn7-ng/pkg/cla/quicl"
+	"github.com/dtn7/dtn7-ng/pkg/discovery"
+	"github.com/dtn7/dtn7-ng/pkg/id_keeper"
 	"github.com/dtn7/dtn7-ng/pkg/processing"
 	"github.com/dtn7/dtn7-ng/pkg/routing"
 	"github.com/dtn7/dtn7-ng/pkg/store"
@@ -38,6 +39,11 @@ func main() {
 		log.WithField("error", err).Fatal("Error initialising store")
 	}
 	defer store.GetStoreSingleton().Close()
+
+	err = id_keeper.InitializeIdKeeper()
+	if err != nil {
+		log.WithField("error", err).Fatal("Error initialising IdKeeper")
+	}
 
 	err = routing.InitialiseAlgorithm(conf.Routing.Algorithm)
 	if err != nil {
