@@ -82,7 +82,7 @@ func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) error {
 	}
 	bd.RetentionConstraints = constraints
 	bd.Retain = len(bd.RetentionConstraints) > 0
-	bd.Dispatch = constraint != ForwardPending
+	bd.Dispatch = constraint == ForwardPending
 	return GetStoreSingleton().updateBundleMetadata(bd)
 }
 
