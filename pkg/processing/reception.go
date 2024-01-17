@@ -19,21 +19,6 @@ func ReceiveBundle(bundle *bpv7.Bundle) {
 	}
 
 	application_agent.GetManagerSingleton().Delivery(bundleDescriptor)
-	/*if err != nil {
-		var e *application_agent.NoAgentRegisteredError
-		if errors.As(err, &e) {
-			// this is actually normal
-			log.WithFields(log.Fields{
-				"bundle": bundleDescriptor.ID,
-				"error":  err,
-			}).Debug("No registered application agent for receiver ID")
-		} else {
-			log.WithFields(log.Fields{
-				"bundle": bundleDescriptor.ID,
-				"error":  err,
-			}).Error("Error delivering bundle")
-		}
-	}*/
 
 	routing.GetAlgorithmSingleton().NotifyNewBundle(bundleDescriptor)
 }
