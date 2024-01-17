@@ -12,6 +12,6 @@ algorithm = "epidemic"
 # Address to bind the server to.
 address = "localhost:8080"
 
-#[[Listener]]
-#type = "QUICL"
-#address = ":35039"
+[[Listener]]
+type = "QUICL"
+address = ":35037"

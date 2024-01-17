@@ -55,7 +55,7 @@ func InitialiseManager(
 		"IPv4":          ipv4,
 		"IPv6":          ipv6,
 		"announcements": announcements,
-	}).Info("Starting Manager")
+	}).Info("Starting discovery manager")
 
 	msg, err := MarshalAnnouncements(announcements)
 	if err != nil {
@@ -100,7 +100,7 @@ func InitialiseManager(
 		select {
 		case discoverErr := <-discoverErrChan:
 			if discoverErr != nil {
-				return err
+				return discoverErr
 			}
 
 		case <-time.After(time.Second):
