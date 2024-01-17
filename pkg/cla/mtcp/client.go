@@ -152,10 +152,10 @@ func (client *MTCPClient) Send(bndl bpv7.Bundle) (err error) {
 }
 
 func (client *MTCPClient) Close() error {
+	cla.GetManagerSingleton().NotifyDisconnect(client)
+
 	close(client.stopSyn)
 	<-client.stopAck
-
-	cla.GetManagerSingleton().NotifyDisconnect(client)
 
 	return nil
 }

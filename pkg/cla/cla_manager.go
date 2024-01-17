@@ -118,6 +118,7 @@ func (manager *Manager) registerAsync(cla Convergence) {
 
 	// check if this CLA is present in the manager's receiver-list
 	if _, ok := cla.(ConvergenceReceiver); ok {
+		log.WithField("cla", cla.Address()).Debug("CLA is receiver")
 		for _, registerdReceiver := range manager.receivers {
 			if cla.Address() == registerdReceiver.Address() {
 				log.WithField("cla", cla.Address()).Debug("CLA already registered as receiver")
@@ -129,6 +130,7 @@ func (manager *Manager) registerAsync(cla Convergence) {
 
 	// check if this CLA is present in the manager's sender-list
 	if _, ok := cla.(ConvergenceSender); ok {
+		log.WithField("cla", cla.Address()).Debug("CLA is sender")
 		for _, registeredSender := range manager.senders {
 			if cla.Address() == registeredSender.Address() {
 				log.WithField("cla", cla.Address()).Debug("CLA already registered as sender")
@@ -190,28 +192,40 @@ func (manager *Manager) NotifyConnect(peerID bpv7.EndpointID) {
 // Will remove the CLA from either or both of the manager's lists.
 // This method is thread-safe.
 func (manager *Manager) NotifyDisconnect(cla Convergence) {
+	log.WithField("cla", cla).Info("CLA disappeared")
+
 	manager.stateMutex.Lock()
 	defer manager.stateMutex.Unlock()
 
 	if receiver, ok := cla.(ConvergenceReceiver); ok {
-		newReceivers := make([]ConvergenceReceiver, len(manager.receivers))
+		log.WithField("cla", cla.Address()).Debug("CLA was sender")
+		newReceivers := make([]ConvergenceReceiver, 0, len(manager.receivers))
 		for _, registeredReceiver := range manager.receivers {
 			if receiver.Address() != registeredReceiver.Address() {
 				newReceivers = append(newReceivers, registeredReceiver)
 			}
 		}
+		log.WithFields(log.Fields{
+			"cla":                 cla.Address(),
+			"remaining receivers": newReceivers,
+		}).Debug("Receivers remaining after filter")
 		manager.receivers = newReceivers
 	}
 
 	if sender, ok := cla.(ConvergenceSender); ok {
+		log.WithField("cla", cla.Address()).Debug("CLA was receiver")
 		go manager.disconnectCallback(sender.GetPeerEndpointID())
 
-		newSenders := make([]ConvergenceSender, len(manager.senders))
+		newSenders := make([]ConvergenceSender, 0, len(manager.senders))
 		for _, registeredSender := range manager.senders {
 			if sender.Address() != registeredSender.Address() {
 				newSenders = append(newSenders, registeredSender)
 			}
 		}
+		log.WithFields(log.Fields{
+			"cla":               cla.Address(),
+			"remaining senders": newSenders,
+		}).Debug("Senders remaining after filter")
 		manager.senders = newSenders
 	}
 }
