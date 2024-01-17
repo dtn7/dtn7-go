@@ -62,7 +62,7 @@ func InitialiseCLAManager(receiveCallback func(bundle *bpv7.Bundle), connectCall
 // Attempting to call this function before manager initialisation will cause the program to panic.
 func GetManagerSingleton() *Manager {
 	if managerSingleton == nil {
-		log.Fatalf("Attempting to access an uninitialised manager. This must never happen!")
+		log.Fatalf("Attempting to access an uninitialised CLA manager. This must never happen!")
 	}
 	return managerSingleton
 }
