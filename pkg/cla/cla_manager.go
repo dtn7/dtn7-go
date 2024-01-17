@@ -179,6 +179,7 @@ func (manager *Manager) registerAsync(cla Convergence) {
 // NotifyReceive is to be called by CLAs when they have received (and successfully unmarshalled) a bundle.
 // This method spawns a new goroutine to handle the bundle asynchronously
 func (manager *Manager) NotifyReceive(bundle *bpv7.Bundle) {
+	log.WithField("bundle", bundle.ID().String()).Debug("Received bundle")
 	go manager.receiveCallback(bundle)
 }
 
