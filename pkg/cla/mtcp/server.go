@@ -149,15 +149,15 @@ func (serv *MTCPServer) Close() error {
 	return nil
 }
 
-func (serv MTCPServer) GetEndpointID() bpv7.EndpointID {
+func (serv *MTCPServer) GetEndpointID() bpv7.EndpointID {
 	return serv.endpointID
 }
 
-func (serv MTCPServer) Address() string {
+func (serv *MTCPServer) Address() string {
 	return fmt.Sprintf("mtcp://%s", serv.listenAddress)
 }
 
-func (serv MTCPServer) String() string {
+func (serv *MTCPServer) String() string {
 	return serv.Address()
 }
 
