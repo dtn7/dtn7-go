@@ -33,6 +33,10 @@ func main() {
 
 	//TODO: set log level in config
 	log.SetLevel(log.DebugLevel)
+	log.SetFormatter(&log.TextFormatter{
+		FullTimestamp:   true,
+		TimestampFormat: "2006-01-02T15:04:05.000",
+	})
 
 	err = store.InitialiseStore(conf.NodeID, conf.Store.Path)
 	if err != nil {
