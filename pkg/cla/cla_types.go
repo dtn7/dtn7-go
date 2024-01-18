@@ -8,6 +8,7 @@ package cla
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 )
@@ -34,12 +35,13 @@ const (
 )
 
 func TypeFromString(claType string) (CLAType, error) {
+	claType = strings.ToLower(claType)
 	switch claType {
-	case "TCPCLv4":
+	case "tcpclv4":
 		return TCPCLv4, nil
-	case "MTCP":
+	case "mtcp":
 		return MTCP, nil
-	case "QUICL":
+	case "quicl":
 		return QUICL, nil
 	default:
 		return 0, fmt.Errorf("invalid CLA Type: %v", claType)
