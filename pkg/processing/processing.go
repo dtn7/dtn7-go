@@ -76,15 +76,14 @@ func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.Converg
 	}
 
 	// Step 1: spawn a new goroutine for each cla
-	currentPeers := cla.GetManagerSingleton().GetSenders()
 	sentAtLeastOnce := false
-	successfulSends := make([]bool, len(currentPeers))
+	successfulSends := make([]bool, len(peers))
 
 	var wg sync.WaitGroup
 	var once sync.Once
 
-	wg.Add(len(currentPeers))
-	for i, peer := range currentPeers {
+	wg.Add(len(peers))
+	for i, peer := range peers {
 		go func(peer cla.ConvergenceSender, i int) {
 			log.WithFields(log.Fields{
 				"bundle": bundleDescriptor.ID,
