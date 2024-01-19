@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -34,7 +35,7 @@ type MTCPClient struct {
 	address string
 
 	stopSyn chan struct{}
-	stopAck chan struct{}
+	stopped atomic.Bool
 }
 
 // NewMTCPClient creates a new MTCPClient, connected to the given address for
@@ -62,7 +63,6 @@ func (client *MTCPClient) Activate() (err error) {
 	}
 
 	client.stopSyn = make(chan struct{})
-	client.stopAck = make(chan struct{})
 
 	client.conn = conn
 
@@ -81,9 +81,6 @@ func (client *MTCPClient) handler() {
 		select {
 		case <-client.stopSyn:
 			_ = client.conn.Close()
-
-			close(client.stopAck)
-
 			return
 
 		case <-ticker.C:
@@ -152,10 +149,14 @@ func (client *MTCPClient) Send(bndl bpv7.Bundle) (err error) {
 }
 
 func (client *MTCPClient) Close() error {
+	closed := client.stopped.Swap(true)
+	if closed {
+		return nil
+	}
+
 	cla.GetManagerSingleton().NotifyDisconnect(client)
 
 	close(client.stopSyn)
-	<-client.stopAck
 
 	return nil
 }

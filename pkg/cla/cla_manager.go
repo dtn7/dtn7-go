@@ -199,7 +199,7 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	defer manager.stateMutex.Unlock()
 
 	if receiver, ok := cla.(ConvergenceReceiver); ok {
-		log.WithField("cla", cla.Address()).Debug("CLA was sender")
+		log.WithField("cla", cla.Address()).Debug("CLA was receiver")
 		newReceivers := make([]ConvergenceReceiver, 0, len(manager.receivers))
 		for _, registeredReceiver := range manager.receivers {
 			if receiver.Address() != registeredReceiver.Address() {
@@ -214,7 +214,7 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	}
 
 	if sender, ok := cla.(ConvergenceSender); ok {
-		log.WithField("cla", cla.Address()).Debug("CLA was receiver")
+		log.WithField("cla", cla.Address()).Debug("CLA was sender")
 		go manager.disconnectCallback(sender.GetPeerEndpointID())
 
 		newSenders := make([]ConvergenceSender, 0, len(manager.senders))
