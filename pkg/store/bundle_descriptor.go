@@ -89,5 +89,6 @@ func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) error {
 func (bd *BundleDescriptor) ResetConstraints() error {
 	bd.RetentionConstraints = make([]Constraint, 0)
 	bd.Retain = false
+	bd.Dispatch = true
 	return GetStoreSingleton().updateBundleMetadata(bd)
 }

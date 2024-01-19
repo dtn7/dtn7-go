@@ -353,7 +353,6 @@ func (endpoint *Endpoint) handleStream(stream quic.Stream) {
 
 // handshakeListener performs the dialer-portion of the protocol handshake
 // Since communication is initiated by the dialer, we listen on the connection for a new stream
-// TODO: prevent the peer from sending bundles on the connection before the handshake is complete
 // We then receive the dialer's EndpointID and finish by sending them ours
 func (endpoint *Endpoint) handshakeListener() error {
 	log.WithField("cla", endpoint.peerAddress).Debug("Performing handshake")

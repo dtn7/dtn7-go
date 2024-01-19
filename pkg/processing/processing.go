@@ -83,6 +83,7 @@ func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.Converg
 	var once sync.Once
 
 	wg.Add(len(peers))
+	log.WithField("bundle", bundleDescriptor.ID.String()).Debug("Initialising sending")
 	for i, peer := range peers {
 		go func(peer cla.ConvergenceSender, i int) {
 			log.WithFields(log.Fields{
@@ -111,16 +112,21 @@ func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.Converg
 		}(peer, i)
 	}
 	wg.Wait()
+	log.WithField("bundle", bundleDescriptor.ID.String()).Debug("Sending finished")
 
 	// Step 2 track which sends were successful
 	for i, success := range successfulSends {
 		if success {
+			log.WithFields(log.Fields{
+				"bundle": bundleDescriptor.ID.String(),
+				"cla":    peers[i].GetPeerEndpointID(),
+			}).Debug("Successfully sent to to peer")
 			bundleDescriptor.AddAlreadySent(peers[i].GetPeerEndpointID())
 		}
 	}
 
 	if sentAtLeastOnce {
-		// TODO: send status report
+		log.WithField("bundle", bundleDescriptor.ID.String()).Debug("Bundle successfully sent")
 	}
 }
 
@@ -130,7 +136,9 @@ func DispatchPending() {
 	bndls, err := store.GetStoreSingleton().GetDispatchable()
 	if err != nil {
 		log.WithError(err).Error("Error dispatching pending bundles")
+		return
 	}
+	log.WithField("bundles", bndls).Debug("Bundles to dispatch")
 
 	for _, bndl := range bndls {
 		err = BundleForwarding(bndl)
