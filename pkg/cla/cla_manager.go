@@ -150,21 +150,10 @@ func (manager *Manager) registerAsync(cla Convergence) {
 			"cla":   cla.Address(),
 			"error": err,
 		}).Error("Failed to start CLA")
-		// TODO: remove from pendingStart
-		return
 	}
 
 	manager.stateMutex.Lock()
 	defer manager.stateMutex.Unlock()
-
-	// add the CLA to the corresponding lists
-	// Note that a single object can be both a sender and receiver
-	if receiver, ok := cla.(ConvergenceReceiver); ok {
-		manager.receivers = append(manager.receivers, receiver)
-	}
-	if sender, ok := cla.(ConvergenceSender); ok {
-		manager.senders = append(manager.senders, sender)
-	}
 
 	// remove the cla from the pending-list
 	pending := make([]Convergence, 0, len(manager.pendingStart))
@@ -174,6 +163,17 @@ func (manager *Manager) registerAsync(cla Convergence) {
 		}
 	}
 	manager.pendingStart = pending
+
+	if err == nil {
+		// add the CLA to the corresponding lists
+		// Note that a single object can be both a sender and receiver
+		if receiver, ok := cla.(ConvergenceReceiver); ok {
+			manager.receivers = append(manager.receivers, receiver)
+		}
+		if sender, ok := cla.(ConvergenceSender); ok {
+			manager.senders = append(manager.senders, sender)
+		}
+	}
 }
 
 // NotifyReceive is to be called by CLAs when they have received (and successfully unmarshalled) a bundle.
