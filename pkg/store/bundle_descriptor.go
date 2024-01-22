@@ -92,3 +92,7 @@ func (bd *BundleDescriptor) ResetConstraints() error {
 	bd.Dispatch = true
 	return GetStoreSingleton().updateBundleMetadata(bd)
 }
+
+func (bd *BundleDescriptor) String() string {
+	return bd.ID.String()
+}

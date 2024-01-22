@@ -118,6 +118,6 @@ func (manager *Manager) Shutdown() {
 func (manager *Manager) Send(bndl *bpv7.Bundle) {
 	idKeeper := id_keeper.GetIdKeeperSingleton()
 	idKeeper.Update(bndl)
-	log.WithFields(log.Fields{"bundle": bndl.ID().String()}).Debug("Application agent sent bundle.")
+	log.WithFields(log.Fields{"bundle": bndl.ID().String()}).Debug("Application agent sent bundle")
 	manager.sendCallback(bndl)
 }

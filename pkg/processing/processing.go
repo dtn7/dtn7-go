@@ -15,6 +15,8 @@ var NodeID bpv7.EndpointID
 
 // BundleForwarding implements the bundle forwarding procedure described in RFC9171 section 5.4
 func BundleForwarding(bundleDescriptor *store.BundleDescriptor) error {
+	log.WithField("bundle", bundleDescriptor.ID.String()).Debug("Processing bundle")
+
 	// Step 1: add "Forward Pending, remove "Dispatch Pending"
 	err := bundleDescriptor.AddConstraint(store.ForwardPending)
 	if err != nil {
