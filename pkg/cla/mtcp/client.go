@@ -116,6 +116,8 @@ func (client *MTCPClient) Send(bndl bpv7.Bundle) (err error) {
 	client.mutex.Lock()
 	defer client.mutex.Unlock()
 
+	log.WithField("bundle", bndl.ID().String()).Debug("mtcp sending bundle")
+
 	connWriter := bufio.NewWriter(client.conn)
 
 	buff := new(bytes.Buffer)

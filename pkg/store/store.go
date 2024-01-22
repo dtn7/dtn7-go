@@ -101,8 +101,8 @@ func (bst *BundleStore) GetDispatchable() ([]*BundleDescriptor, error) {
 	}
 
 	ptrs := make([]*BundleDescriptor, len(bundles))
-	for i, bndl := range bundles {
-		ptrs[i] = &bndl
+	for i := range bundles {
+		ptrs[i] = &bundles[i]
 	}
 
 	return ptrs, nil
