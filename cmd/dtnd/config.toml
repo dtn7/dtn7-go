@@ -1,5 +1,9 @@
 node_id = "dtn://test/"
 
+[Debug]
+profiling = true
+profile_file = "profile.pprof"
+
 [Store]
 path = "/tmp/dtn_store"
 

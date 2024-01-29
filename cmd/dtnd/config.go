@@ -29,6 +29,7 @@ func (e *ConfigError) Unwrap() error { return e.cause }
 
 type config struct {
 	NodeID    bpv7.EndpointID
+	Debug     DebugConfig
 	Store     storeConfig
 	Routing   routingConfig
 	Listener  []cla.ListenerConfig
@@ -38,10 +39,16 @@ type config struct {
 
 type tomlConfig struct {
 	NodeID   string `toml:"node_id"`
+	Debug    DebugConfig
 	Store    storeConfig
 	Routing  tomlRoutingConfig
 	Listener []listenerTomlConfig
 	Agents   agentsConfig
+}
+
+type DebugConfig struct {
+	Profiling   bool
+	ProfileFile string `toml:"profile_file"`
 }
 
 type storeConfig struct {
@@ -97,6 +104,8 @@ func parse(filename string) (config, error) {
 	}
 
 	conf.NodeID = nodeID
+
+	conf.Debug = tomlConf.Debug
 
 	conf.Store = tomlConf.Store
 

@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"os"
+	"runtime/pprof"
 	"time"
 
 	"github.com/go-co-op/gocron/v2"
@@ -22,6 +23,7 @@ import (
 )
 
 func main() {
+
 	if len(os.Args) != 2 {
 		log.Fatalf("Usage: %s configuration.toml", os.Args[0])
 	}
@@ -115,6 +117,19 @@ func main() {
 	}
 	s.Start()
 	defer s.Shutdown()
+
+	if conf.Debug.Profiling {
+		f, err := os.Create(conf.Debug.ProfileFile)
+		defer f.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = pprof.StartCPUProfile(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer pprof.StopCPUProfile()
+	}
 
 	r := mux.NewRouter()
 	restRouter := r.PathPrefix("/rest").Subrouter()
