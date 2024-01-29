@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func ReceiveBundle(bundle *bpv7.Bundle) {
+func receiveAsync(bundle *bpv7.Bundle) {
 	bundleDescriptor, err := store.GetStoreSingleton().InsertBundle(bundle)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -21,4 +21,17 @@ func ReceiveBundle(bundle *bpv7.Bundle) {
 	application_agent.GetManagerSingleton().Delivery(bundleDescriptor)
 
 	routing.GetAlgorithmSingleton().NotifyNewBundle(bundleDescriptor)
+
+	err = BundleForwarding(bundleDescriptor)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"bundle": bundleDescriptor.ID,
+			"error":  err,
+		}).Error("Error forwarding bundle")
+		return
+	}
+}
+
+func ReceiveBundle(bundle *bpv7.Bundle) {
+	go receiveAsync(bundle)
 }
