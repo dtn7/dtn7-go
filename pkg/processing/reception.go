@@ -22,14 +22,7 @@ func receiveAsync(bundle *bpv7.Bundle) {
 
 	routing.GetAlgorithmSingleton().NotifyNewBundle(bundleDescriptor)
 
-	err = BundleForwarding(bundleDescriptor)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"bundle": bundleDescriptor.ID,
-			"error":  err,
-		}).Error("Error forwarding bundle")
-		return
-	}
+	BundleForwarding(bundleDescriptor)
 }
 
 func ReceiveBundle(bundle *bpv7.Bundle) {
