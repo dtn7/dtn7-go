@@ -7,24 +7,31 @@ import (
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/routing"
 	"github.com/dtn7/dtn7-ng/pkg/store"
-	"github.com/hashicorp/go-multierror"
 	log "github.com/sirupsen/logrus"
 )
 
 var NodeID bpv7.EndpointID
 
 // BundleForwarding implements the bundle forwarding procedure described in RFC9171 section 5.4
-func BundleForwarding(bundleDescriptor *store.BundleDescriptor) error {
+func forwardingAsync(bundleDescriptor *store.BundleDescriptor) {
 	log.WithField("bundle", bundleDescriptor.ID.String()).Debug("Processing bundle")
 
 	// Step 1: add "Forward Pending, remove "Dispatch Pending"
 	err := bundleDescriptor.AddConstraint(store.ForwardPending)
 	if err != nil {
-		return err
+		log.WithFields(log.Fields{
+			"bundle": bundleDescriptor.ID,
+			"error":  err,
+		}).Error("Error adding constraint to bundle")
+		return
 	}
 	err = bundleDescriptor.RemoveConstraint(store.DispatchPending)
 	if err != nil {
-		return err
+		log.WithFields(log.Fields{
+			"bundle": bundleDescriptor.ID,
+			"error":  err,
+		}).Error("Error removing constraint from bundle")
+		return
 	}
 
 	// Step 2: determine if contraindicated - whatever that means
@@ -33,13 +40,18 @@ func BundleForwarding(bundleDescriptor *store.BundleDescriptor) error {
 
 	// Step 3: if contraindicated, call `contraindicateBundle`, and return
 	if len(forwardToPeers) == 0 {
-		return bundleContraindicated(bundleDescriptor)
+		bundleContraindicated(bundleDescriptor)
+		return
 	}
 
 	// Step 4:
 	bundle, err := bundleDescriptor.Load()
 	if err != nil {
-		return multierror.Append(err, bundleContraindicated(bundleDescriptor))
+		log.WithFields(log.Fields{
+			"bundle": bundleDescriptor.ID,
+			"error":  err,
+		}).Error("Error loading bundle from disk")
+		return
 	}
 	// Step 4.1: remove previous node block
 	if prevNodeBlock, err := bundle.ExtensionBlock(bpv7.ExtBlockTypePreviousNodeBlock); err == nil {
@@ -59,12 +71,29 @@ func BundleForwarding(bundleDescriptor *store.BundleDescriptor) error {
 	forwardBundle(bundleDescriptor, forwardToPeers)
 
 	// Step 6: remove "Forward Pending"
-	return bundleDescriptor.RemoveConstraint(store.ForwardPending)
+	err = bundleDescriptor.RemoveConstraint(store.ForwardPending)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"bundle": bundleDescriptor.ID,
+			"error":  err,
+		}).Error("Error removing constraint from bundle")
+		return
+	}
 }
 
-func bundleContraindicated(bundleDescriptor *store.BundleDescriptor) error {
+func BundleForwarding(bundleDescriptor *store.BundleDescriptor) {
+	go forwardingAsync(bundleDescriptor)
+}
+
+func bundleContraindicated(bundleDescriptor *store.BundleDescriptor) {
 	// TODO: is there anything else to do here?
-	return bundleDescriptor.ResetConstraints()
+	err := bundleDescriptor.ResetConstraints()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"bundle": bundleDescriptor.ID,
+			"error":  err,
+		}).Error("Error resetting bundle constraints")
+	}
 }
 
 func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.ConvergenceSender) {
@@ -143,12 +172,6 @@ func DispatchPending() {
 	log.WithField("bundles", bndls).Debug("Bundles to dispatch")
 
 	for _, bndl := range bndls {
-		err = BundleForwarding(bndl)
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error":  err,
-				"bundle": bndl.ID,
-			}).Error("Error forwarding bundle")
-		}
+		BundleForwarding(bndl)
 	}
 }
