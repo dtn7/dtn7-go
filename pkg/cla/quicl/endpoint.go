@@ -348,7 +348,10 @@ func (endpoint *Endpoint) handleStream(stream quic.Stream) {
 
 		cla.GetManagerSingleton().NotifyReceive(bundle)
 	}
-	log.WithField("cla", endpoint).Debug("Finished handling stream")
+	log.WithFields(log.Fields{
+		"cla":    endpoint,
+		"bundle": bundle.ID(),
+	}).Debug("Finished handling stream")
 }
 
 // handshakeListener performs the dialer-portion of the protocol handshake

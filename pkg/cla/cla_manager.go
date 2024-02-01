@@ -198,23 +198,23 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	manager.stateMutex.Lock()
 	defer manager.stateMutex.Unlock()
 
-	if receiver, ok := cla.(ConvergenceReceiver); ok {
-		log.WithField("cla", cla.Address()).Debug("CLA was receiver")
+	if disappearedReceiver, ok := cla.(ConvergenceReceiver); ok {
+		log.WithField("cla", cla).Debug("CLA was receiver")
 		newReceivers := make([]ConvergenceReceiver, 0, len(manager.receivers))
 		for _, registeredReceiver := range manager.receivers {
-			if receiver.Address() != registeredReceiver.Address() {
+			if disappearedReceiver.Address() != registeredReceiver.Address() {
 				newReceivers = append(newReceivers, registeredReceiver)
 			}
 		}
 		log.WithFields(log.Fields{
-			"cla":                 cla.Address(),
+			"cla":                 cla,
 			"remaining receivers": newReceivers,
 		}).Debug("Receivers remaining after filter")
 		manager.receivers = newReceivers
 	}
 
 	if sender, ok := cla.(ConvergenceSender); ok {
-		log.WithField("cla", cla.Address()).Debug("CLA was sender")
+		log.WithField("cla", cla).Debug("CLA was sender")
 		go manager.disconnectCallback(sender.GetPeerEndpointID())
 
 		newSenders := make([]ConvergenceSender, 0, len(manager.senders))
@@ -224,7 +224,7 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 			}
 		}
 		log.WithFields(log.Fields{
-			"cla":               cla.Address(),
+			"cla":               cla,
 			"remaining senders": newSenders,
 		}).Debug("Senders remaining after filter")
 		manager.senders = newSenders
