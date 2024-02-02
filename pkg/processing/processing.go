@@ -10,7 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var NodeID bpv7.EndpointID
+var ownNodeID bpv7.EndpointID
+
+func SetOwnNodeID(nid bpv7.EndpointID) {
+	ownNodeID = nid
+}
 
 // BundleForwarding implements the bundle forwarding procedure described in RFC9171 section 5.4
 func forwardingAsync(bundleDescriptor *store.BundleDescriptor) {
@@ -58,7 +62,7 @@ func forwardingAsync(bundleDescriptor *store.BundleDescriptor) {
 		bundle.RemoveExtensionBlockByBlockNumber(prevNodeBlock.BlockNumber)
 	}
 	// Step 4.2: add new previous node block
-	prevNodeBlock := bpv7.NewCanonicalBlock(0, 0, bpv7.NewPreviousNodeBlock(NodeID))
+	prevNodeBlock := bpv7.NewCanonicalBlock(0, 0, bpv7.NewPreviousNodeBlock(ownNodeID))
 	err = bundle.AddExtensionBlock(prevNodeBlock)
 	if err != nil {
 		log.WithFields(log.Fields{
