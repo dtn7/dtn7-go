@@ -224,6 +224,13 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 				"error":  sErr,
 			}).Debug("Error closing stream (buffer-write error)")
 		}
+
+		var netErr net.Error
+		if errors.As(err, &netErr) {
+			if netErr.Timeout() {
+				cla.GetManagerSingleton().NotifyDisconnect(endpoint)
+			}
+		}
 		return err
 	}
 
@@ -341,6 +348,13 @@ func (endpoint *Endpoint) handleStream(stream quic.Stream) {
 		}).Error("quicl failed to read bundle")
 
 		stream.CancelRead(internal.StreamTransmissionError)
+
+		var netErr net.Error
+		if errors.As(err, &netErr) {
+			if netErr.Timeout() {
+				cla.GetManagerSingleton().NotifyDisconnect(endpoint)
+			}
+		}
 	} else {
 		log.WithFields(log.Fields{
 			"cla": endpoint,
