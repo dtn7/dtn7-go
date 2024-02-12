@@ -1,8 +1,6 @@
 package processing
 
 import (
-	"sync"
-
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/routing"
@@ -110,58 +108,38 @@ func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.Converg
 		return
 	}
 
-	// Step 1: spawn a new goroutine for each cla
-	sentAtLeastOnce := false
-	successfulSends := make([]bool, len(peers))
+	for _, peer := range peers {
+		go forwardBundleToPeer(bundle, peer)
+	}
+}
 
-	var wg sync.WaitGroup
-	var once sync.Once
+func forwardBundleToPeer(bundle bpv7.Bundle, peer cla.ConvergenceSender) {
+	log.WithFields(log.Fields{
+		"bundle": bundle.ID(),
+		"cla":    peer,
+	}).Info("Sending bundle to a CLA (ConvergenceSender)")
 
-	wg.Add(len(peers))
-	log.WithField("bundle", bundleDescriptor.ID.String()).Debug("Initialising sending")
-	for i, peer := range peers {
-		go func(peer cla.ConvergenceSender, i int) {
+	if err := peer.Send(bundle); err != nil {
+		log.WithFields(log.Fields{
+			"bundle": bundle.ID(),
+			"cla":    peer,
+			"error":  err,
+		}).Warn("Sending bundle failed")
+	} else {
+		log.WithFields(log.Fields{
+			"bundle": bundle.ID(),
+			"cla":    peer,
+		}).Debug("Sending bundle succeeded")
+
+		bd, err := store.GetStoreSingleton().LoadBundleDescriptor(bundle.ID())
+		if err != nil {
 			log.WithFields(log.Fields{
-				"bundle": bundleDescriptor.ID,
+				"bundle": bundle.ID(),
 				"cla":    peer,
-			}).Info("Sending bundle to a CLA (ConvergenceSender)")
-
-			if err := peer.Send(bundle); err != nil {
-				log.WithFields(log.Fields{
-					"bundle": bundleDescriptor.ID,
-					"cla":    peer,
-					"error":  err,
-				}).Warn("Sending bundle failed")
-			} else {
-				log.WithFields(log.Fields{
-					"bundle": bundleDescriptor.ID,
-					"cla":    peer,
-				}).Debug("Sending bundle succeeded")
-
-				successfulSends[i] = true
-
-				once.Do(func() { sentAtLeastOnce = true })
-			}
-
-			wg.Done()
-		}(peer, i)
-	}
-	wg.Wait()
-	log.WithField("bundle", bundleDescriptor.ID.String()).Debug("Sending finished")
-
-	// Step 2 track which sends were successful
-	for i, success := range successfulSends {
-		if success {
-			log.WithFields(log.Fields{
-				"bundle": bundleDescriptor.ID.String(),
-				"cla":    peers[i].GetPeerEndpointID(),
-			}).Debug("Successfully sent to peer")
-			bundleDescriptor.AddAlreadySent(peers[i].GetPeerEndpointID())
+				"error":  err,
+			}).Error("Error getting BundleDescriptor from store")
 		}
-	}
-
-	if sentAtLeastOnce {
-		log.WithField("bundle", bundleDescriptor.ID.String()).Debug("Bundle successfully sent")
+		bd.AddAlreadySent(peer.GetPeerEndpointID())
 	}
 }
 
