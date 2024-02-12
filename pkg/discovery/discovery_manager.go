@@ -149,9 +149,8 @@ func (manager *Manager) handleDiscovery(announcement Announcement, addr string) 
 	}
 
 	log.WithFields(log.Fields{
-		"discovery": manager,
-		"peer":      addr,
-		"message":   announcement,
+		"peer":    addr,
+		"message": announcement,
 	}).Debug("Peer discovery received a message")
 
 	var conv cla.Convergence
@@ -159,7 +158,7 @@ func (manager *Manager) handleDiscovery(announcement Announcement, addr string) 
 	case cla.MTCP:
 		conv = mtcp.NewMTCPClient(fmt.Sprintf("%s:%d", addr, announcement.Port), announcement.Endpoint)
 	case cla.QUICL:
-		conv = quicl.NewDialerEndpoint(fmt.Sprintf("%s:%d", addr, announcement.Port), announcement.Endpoint)
+		conv = quicl.NewDialerEndpoint(fmt.Sprintf("%s:%d", addr, announcement.Port), manager.NodeId)
 	default:
 		log.WithField("cType", announcement.Type).Error("Invalid cType")
 		return
