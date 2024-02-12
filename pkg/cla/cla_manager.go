@@ -106,7 +106,10 @@ func (manager *Manager) Register(cla Convergence) {
 // It will call the CLA's Start-method, wait for it to return and if no error was produced,
 // the CLA will be added to the manager's sender/receiver lists.
 func (manager *Manager) registerAsync(cla Convergence) {
+	log.WithField("cla", cla.Address()).Info("Registering new CLA")
 	manager.stateMutex.Lock()
+	log.WithField("cla", cla.Address()).Debug("Acquired state lock")
+
 	// check if this CLA is present in the manager's pendingStart-list
 	for _, pending := range manager.pendingStart {
 		if cla.Address() == pending.Address() {
@@ -142,7 +145,9 @@ func (manager *Manager) registerAsync(cla Convergence) {
 
 	// add CLA to pendingStart, so that no-one else will try to start it while we're still working
 	manager.pendingStart = append(manager.pendingStart, cla)
+	log.WithField("cla", cla.Address()).Debug("Added cla to pending")
 	manager.stateMutex.Unlock()
+	log.WithField("cla", cla.Address()).Debug("Released state lock")
 
 	err := cla.Activate()
 	if err != nil {
@@ -150,9 +155,13 @@ func (manager *Manager) registerAsync(cla Convergence) {
 			"cla":   cla.Address(),
 			"error": err,
 		}).Error("Failed to start CLA")
+	} else {
+		log.WithField("cla", cla.Address()).Debug("CLA started successfully")
 	}
 
 	manager.stateMutex.Lock()
+	log.WithField("cla", cla.Address()).Debug("Acquired state lock")
+	defer log.WithField("cla", cla.Address()).Debug("Released state lock")
 	defer manager.stateMutex.Unlock()
 
 	// remove the cla from the pending-list
@@ -163,15 +172,18 @@ func (manager *Manager) registerAsync(cla Convergence) {
 		}
 	}
 	manager.pendingStart = pending
+	log.WithField("cla", cla).Debug("CLA removed from pending")
 
 	if err == nil {
 		// add the CLA to the corresponding lists
 		// Note that a single object can be both a sender and receiver
 		if receiver, ok := cla.(ConvergenceReceiver); ok {
 			manager.receivers = append(manager.receivers, receiver)
+			log.WithField("cla", cla).Debug("CLA added to receivers")
 		}
 		if sender, ok := cla.(ConvergenceSender); ok {
 			manager.senders = append(manager.senders, sender)
+			log.WithField("cla", cla).Debug("CLA added to senders")
 		}
 	}
 }
@@ -196,6 +208,8 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	log.WithField("cla", cla).Info("CLA disappeared")
 
 	manager.stateMutex.Lock()
+	log.WithField("cla", cla).Debug("Acquired state lock")
+	defer log.WithField("cla", cla).Debug("Released state lock")
 	defer manager.stateMutex.Unlock()
 
 	if receiver, ok := cla.(ConvergenceReceiver); ok {

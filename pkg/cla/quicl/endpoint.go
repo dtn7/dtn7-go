@@ -85,6 +85,11 @@ Methods for Convergence interface
 */
 
 func (endpoint *Endpoint) Activate() error {
+	log.WithFields(log.Fields{
+		"cla":  endpoint.id,
+		"peer": endpoint.peerAddress,
+	}).Debug("Starting CLA")
+
 	// if we are on the dialer-side we need to first initiate the quic-connection
 	if endpoint.dialer {
 		session, err := quic.DialAddr(context.Background(), endpoint.peerAddress, internal.GenerateSimpleDialerTLSConfig(), internal.GenerateQUICConfig())
@@ -92,12 +97,8 @@ func (endpoint *Endpoint) Activate() error {
 		if err != nil {
 			return err
 		}
+		log.WithField("cla", endpoint.id).Debug("Dialer established QUIC connection")
 	}
-
-	log.WithFields(log.Fields{
-		"endpoint": endpoint.id,
-		"peer":     endpoint.peerAddress,
-	}).Debug("Starting CLA")
 
 	var err error
 	if endpoint.dialer {
@@ -355,7 +356,7 @@ func (endpoint *Endpoint) handleStream(stream quic.Stream) {
 // Since communication is initiated by the dialer, we listen on the connection for a new stream
 // We then receive the dialer's EndpointID and finish by sending them ours
 func (endpoint *Endpoint) handshakeListener() error {
-	log.WithField("cla", endpoint.peerAddress).Debug("Performing handshake")
+	log.WithField("cla", endpoint.peerAddress).Debug("Performing listener handshake")
 
 	// the dialer has half a second to initiate the handshake
 	ctx, cancel := context.WithTimeout(context.Background(), handshakeTimeout)
@@ -396,7 +397,7 @@ func (endpoint *Endpoint) handshakeListener() error {
 // We first open a new bidirectional data stream inside the QUIC connection
 // We then send our own EndpointID over this stream, and finish by receiving the listener's id
 func (endpoint *Endpoint) handshakeDialer() error {
-	log.WithField("cla", endpoint.peerAddress).Debug("Performing handshake")
+	log.WithField("cla", endpoint.peerAddress).Debug("Performing dialer handshake")
 
 	stream, err := endpoint.connection.OpenStream()
 	if err != nil {
