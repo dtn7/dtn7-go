@@ -12,7 +12,7 @@ import (
 
 var NodeID bpv7.EndpointID
 
-// BundleForwarding implements the bundle forwarding procedure described in RFC9171 section 5.4
+// forwardingAsync implements the bundle forwarding procedure described in RFC9171 section 5.4
 func forwardingAsync(bundleDescriptor *store.BundleDescriptor) {
 	log.WithField("bundle", bundleDescriptor.ID.String()).Debug("Processing bundle")
 
@@ -151,7 +151,7 @@ func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.Converg
 			log.WithFields(log.Fields{
 				"bundle": bundleDescriptor.ID.String(),
 				"cla":    peers[i].GetPeerEndpointID(),
-			}).Debug("Successfully sent to to peer")
+			}).Debug("Successfully sent to peer")
 			bundleDescriptor.AddAlreadySent(peers[i].GetPeerEndpointID())
 		}
 	}

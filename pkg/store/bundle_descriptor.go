@@ -58,6 +58,11 @@ func (bd *BundleDescriptor) AddAlreadySent(peers ...bpv7.EndpointID) {
 			"bundle": bd.IDString,
 			"error":  err,
 		}).Error("Error syncing bundle metadata")
+	} else {
+		log.WithFields(log.Fields{
+			"bundle": bd.IDString,
+			"peers":  peers,
+		}).Debug("Peers added to already sent")
 	}
 }
 
