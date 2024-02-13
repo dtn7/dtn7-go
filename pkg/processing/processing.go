@@ -70,7 +70,7 @@ func forwardingAsync(bundleDescriptor *store.BundleDescriptor) {
 	}
 	// TODO: Step 4.3: update bundle age block
 	// Step 4.4: call CLAs for transmission
-	forwardBundle(bundleDescriptor, forwardToPeers)
+	forwardBundle(bundle, forwardToPeers)
 
 	// Step 6: remove "Forward Pending"
 	err = bundleDescriptor.RemoveConstraint(store.ForwardPending)
@@ -98,16 +98,7 @@ func bundleContraindicated(bundleDescriptor *store.BundleDescriptor) {
 	}
 }
 
-func forwardBundle(bundleDescriptor *store.BundleDescriptor, peers []cla.ConvergenceSender) {
-	bundle, err := bundleDescriptor.Load()
-	if err != nil {
-		log.WithFields(log.Fields{
-			"bundle": bundleDescriptor.ID,
-			"error":  err,
-		}).Error("Failed to load bundle from disk")
-		return
-	}
-
+func forwardBundle(bundle bpv7.Bundle, peers []cla.ConvergenceSender) {
 	for _, peer := range peers {
 		go forwardBundleToPeer(bundle, peer)
 	}
