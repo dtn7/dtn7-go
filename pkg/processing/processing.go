@@ -6,6 +6,7 @@ import (
 	"github.com/dtn7/dtn7-ng/pkg/routing"
 	"github.com/dtn7/dtn7-ng/pkg/store"
 	log "github.com/sirupsen/logrus"
+	"sync"
 )
 
 var ownNodeID bpv7.EndpointID
@@ -70,7 +71,10 @@ func forwardingAsync(bundleDescriptor *store.BundleDescriptor) {
 	}
 	// TODO: Step 4.3: update bundle age block
 	// Step 4.4: call CLAs for transmission
-	forwardBundle(bundle, forwardToPeers)
+	var mutex sync.Mutex
+	for _, peer := range forwardToPeers {
+		go forwardBundleToPeer(&mutex, bundleDescriptor, bundle, peer)
+	}
 
 	// Step 6: remove "Forward Pending"
 	err = bundleDescriptor.RemoveConstraint(store.ForwardPending)
@@ -98,13 +102,7 @@ func bundleContraindicated(bundleDescriptor *store.BundleDescriptor) {
 	}
 }
 
-func forwardBundle(bundle bpv7.Bundle, peers []cla.ConvergenceSender) {
-	for _, peer := range peers {
-		go forwardBundleToPeer(bundle, peer)
-	}
-}
-
-func forwardBundleToPeer(bundle bpv7.Bundle, peer cla.ConvergenceSender) {
+func forwardBundleToPeer(mutex *sync.Mutex, bundleDescriptor *store.BundleDescriptor, bundle bpv7.Bundle, peer cla.ConvergenceSender) {
 	log.WithFields(log.Fields{
 		"bundle": bundle.ID(),
 		"cla":    peer,
@@ -121,16 +119,9 @@ func forwardBundleToPeer(bundle bpv7.Bundle, peer cla.ConvergenceSender) {
 			"bundle": bundle.ID(),
 			"cla":    peer,
 		}).Debug("Sending bundle succeeded")
-
-		bd, err := store.GetStoreSingleton().LoadBundleDescriptor(bundle.ID())
-		if err != nil {
-			log.WithFields(log.Fields{
-				"bundle": bundle.ID(),
-				"cla":    peer,
-				"error":  err,
-			}).Error("Error getting BundleDescriptor from store")
-		}
-		bd.AddAlreadySent(peer.GetPeerEndpointID())
+		mutex.Lock()
+		bundleDescriptor.AddAlreadySent(peer.GetPeerEndpointID())
+		mutex.Unlock()
 	}
 }
 
