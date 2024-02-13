@@ -115,6 +115,7 @@ func (manager *Manager) registerAsync(cla Convergence) {
 		if cla.Address() == pending.Address() {
 			log.WithField("cla", cla.Address()).Debug("CLA already being started")
 			manager.stateMutex.Unlock()
+			log.WithField("cla", cla.Address()).Debug("Released state lock")
 			return
 		}
 	}
@@ -126,6 +127,7 @@ func (manager *Manager) registerAsync(cla Convergence) {
 			if cla.Address() == registerdReceiver.Address() {
 				log.WithField("cla", cla.Address()).Debug("CLA already registered as receiver")
 				manager.stateMutex.Unlock()
+				log.WithField("cla", cla.Address()).Debug("Released state lock")
 				return
 			}
 		}
@@ -138,6 +140,7 @@ func (manager *Manager) registerAsync(cla Convergence) {
 			if cla.Address() == registeredSender.Address() {
 				log.WithField("cla", cla.Address()).Debug("CLA already registered as sender")
 				manager.stateMutex.Unlock()
+				log.WithField("cla", cla.Address()).Debug("Released state lock")
 				return
 			}
 		}
