@@ -63,12 +63,12 @@ func (idk *IdKeeper) Update(bndl *bpv7.Bundle) {
 	var tpl = newIdTuple(bndl)
 
 	idk.mutex.Lock()
+	defer idk.mutex.Unlock()
 	if state, ok := idk.data[tpl]; ok {
 		idk.data[tpl] = state + 1
 	} else {
 		idk.data[tpl] = 0
 	}
-	idk.mutex.Unlock()
 
 	bndl.PrimaryBlock.CreationTimestamp[1] = idk.data[tpl]
 }
