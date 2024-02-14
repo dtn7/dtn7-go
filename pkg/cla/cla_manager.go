@@ -20,6 +20,9 @@ type Manager struct {
 	// They then need to spawn a new CLA and pass it to the manager's register-method
 	listeners []ConvergenceListener
 
+	disconnectMutex sync.Mutex
+	pendingRemoval  map[string]bool
+
 	// receiveCallback will be called for every received bundle
 	// This is necessary since we can't directly import either the store or processing module without creating an import loop
 	receiveCallback func(bundle *bpv7.Bundle)
@@ -53,6 +56,7 @@ func InitialiseCLAManager(receiveCallback func(bundle *bpv7.Bundle), connectCall
 		receiveCallback:    receiveCallback,
 		connectCallback:    connectCallback,
 		disconnectCallback: disconnectCallback,
+		pendingRemoval:     make(map[string]bool),
 	}
 	managerSingleton = &manager
 	return nil
@@ -107,15 +111,15 @@ func (manager *Manager) Register(cla Convergence) {
 // the CLA will be added to the manager's sender/receiver lists.
 func (manager *Manager) registerAsync(cla Convergence) {
 	log.WithField("cla", cla.Address()).Info("Registering new CLA")
-	manager.stateMutex.Lock()
-	log.WithField("cla", cla.Address()).Debug("Acquired state lock")
+	manager.stateMutex.RLock()
+	log.WithField("cla", cla.Address()).Debug("Acquired read lock")
 
 	// check if this CLA is present in the manager's pendingStart-list
 	for _, pending := range manager.pendingStart {
 		if cla.Address() == pending.Address() {
 			log.WithField("cla", cla.Address()).Debug("CLA already being started")
-			manager.stateMutex.Unlock()
-			log.WithField("cla", cla.Address()).Debug("Released state lock")
+			manager.stateMutex.RUnlock()
+			log.WithField("cla", cla.Address()).Debug("Released read lock")
 			return
 		}
 	}
@@ -126,8 +130,8 @@ func (manager *Manager) registerAsync(cla Convergence) {
 		for _, registerdReceiver := range manager.receivers {
 			if cla.Address() == registerdReceiver.Address() {
 				log.WithField("cla", cla.Address()).Debug("CLA already registered as receiver")
-				manager.stateMutex.Unlock()
-				log.WithField("cla", cla.Address()).Debug("Released state lock")
+				manager.stateMutex.RUnlock()
+				log.WithField("cla", cla.Address()).Debug("Released read lock")
 				return
 			}
 		}
@@ -139,13 +143,17 @@ func (manager *Manager) registerAsync(cla Convergence) {
 		for _, registeredSender := range manager.senders {
 			if cla.Address() == registeredSender.Address() {
 				log.WithField("cla", cla.Address()).Debug("CLA already registered as sender")
-				manager.stateMutex.Unlock()
-				log.WithField("cla", cla.Address()).Debug("Released state lock")
+				manager.stateMutex.RUnlock()
+				log.WithField("cla", cla.Address()).Debug("Released read lock")
 				return
 			}
 		}
 	}
+	manager.stateMutex.RUnlock()
+	log.WithField("cla", cla.Address()).Debug("Released read lock")
 
+	manager.stateMutex.Lock()
+	log.WithField("cla", cla.Address()).Debug("Acquired state lock")
 	// add CLA to pendingStart, so that no-one else will try to start it while we're still working
 	manager.pendingStart = append(manager.pendingStart, cla)
 	log.WithField("cla", cla.Address()).Debug("Added cla to pending")
@@ -210,6 +218,16 @@ func (manager *Manager) NotifyConnect(peerID bpv7.EndpointID) {
 func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	log.WithField("cla", cla).Info("CLA disappeared")
 
+	manager.disconnectMutex.Lock()
+	_, present := manager.pendingRemoval[cla.Address()]
+	if present {
+		log.WithField("cla", cla).Debug("CLA already pending removal")
+		manager.disconnectMutex.Unlock()
+		return
+	}
+	manager.pendingRemoval[cla.Address()] = true
+	manager.disconnectMutex.Unlock()
+
 	manager.stateMutex.Lock()
 	log.WithField("cla", cla).Debug("Acquired state lock")
 	defer log.WithField("cla", cla).Debug("Released state lock")
@@ -246,6 +264,10 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 		}).Debug("Senders remaining after filter")
 		manager.senders = newSenders
 	}
+
+	manager.disconnectMutex.Lock()
+	defer manager.disconnectMutex.Unlock()
+	delete(manager.pendingRemoval, cla.Address())
 }
 
 func (manager *Manager) RegisterListener(listener ConvergenceListener) error {
