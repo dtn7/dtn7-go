@@ -22,7 +22,11 @@ func receiveAsync(bundle *bpv7.Bundle) {
 
 	routing.GetAlgorithmSingleton().NotifyNewBundle(bundleDescriptor)
 
-	BundleForwarding(bundleDescriptor)
+	for _, constraint := range bundleDescriptor.RetentionConstraints {
+		if constraint == store.DispatchPending {
+			BundleForwarding(bundleDescriptor)
+		}
+	}
 }
 
 func ReceiveBundle(bundle *bpv7.Bundle) {
