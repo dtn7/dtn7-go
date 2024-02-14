@@ -72,9 +72,12 @@ func forwardingAsync(bundleDescriptor *store.BundleDescriptor) {
 	// TODO: Step 4.3: update bundle age block
 	// Step 4.4: call CLAs for transmission
 	var mutex sync.Mutex
+	var wg sync.WaitGroup
+	wg.Add(len(forwardToPeers))
 	for _, peer := range forwardToPeers {
-		go forwardBundleToPeer(&mutex, bundleDescriptor, bundle, peer)
+		go forwardBundleToPeer(&mutex, bundleDescriptor, bundle, peer, &wg)
 	}
+	wg.Wait()
 
 	// Step 6: remove "Forward Pending"
 	err = bundleDescriptor.RemoveConstraint(store.ForwardPending)
@@ -102,7 +105,7 @@ func bundleContraindicated(bundleDescriptor *store.BundleDescriptor) {
 	}
 }
 
-func forwardBundleToPeer(mutex *sync.Mutex, bundleDescriptor *store.BundleDescriptor, bundle bpv7.Bundle, peer cla.ConvergenceSender) {
+func forwardBundleToPeer(mutex *sync.Mutex, bundleDescriptor *store.BundleDescriptor, bundle bpv7.Bundle, peer cla.ConvergenceSender, wg *sync.WaitGroup) {
 	log.WithFields(log.Fields{
 		"bundle": bundle.ID(),
 		"cla":    peer,
@@ -123,6 +126,7 @@ func forwardBundleToPeer(mutex *sync.Mutex, bundleDescriptor *store.BundleDescri
 		bundleDescriptor.AddAlreadySent(peer.GetPeerEndpointID())
 		mutex.Unlock()
 	}
+	wg.Done()
 }
 
 func DispatchPending() {
