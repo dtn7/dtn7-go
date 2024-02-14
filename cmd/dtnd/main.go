@@ -58,7 +58,7 @@ func main() {
 
 	processing.SetOwnNodeID(conf.NodeID)
 
-	err = cla.InitialiseCLAManager(processing.ReceiveBundle, routing.GetAlgorithmSingleton().NotifyPeerAppeared, routing.GetAlgorithmSingleton().NotifyPeerDisappeared)
+	err = cla.InitialiseCLAManager(processing.ReceiveBundle, processing.NewPeer, routing.GetAlgorithmSingleton().NotifyPeerDisappeared)
 	if err != nil {
 		log.WithField("error", err).Fatal("Error initialising CLAs")
 	}
@@ -88,7 +88,7 @@ func main() {
 		}
 	}
 
-	err = discovery.InitialiseManager(conf.NodeID, conf.Discovery, time.Second, true, false)
+	err = discovery.InitialiseManager(conf.NodeID, conf.Discovery, 2*time.Second, true, false)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,
@@ -108,7 +108,7 @@ func main() {
 	}
 	_, err = s.NewJob(
 		gocron.DurationJob(
-			1*time.Second,
+			10*time.Second,
 		),
 		gocron.NewTask(
 			processing.DispatchPending,

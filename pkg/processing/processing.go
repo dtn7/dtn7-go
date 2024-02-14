@@ -139,3 +139,8 @@ func DispatchPending() {
 		BundleForwarding(bndl)
 	}
 }
+
+func NewPeer(peerID bpv7.EndpointID) {
+	routing.GetAlgorithmSingleton().NotifyPeerAppeared(peerID)
+	DispatchPending()
+}
