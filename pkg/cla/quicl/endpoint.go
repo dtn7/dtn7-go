@@ -185,6 +185,11 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 		}
 
 		return err
+	} else {
+		log.WithFields(log.Fields{
+			"peer":   endpoint.peerId,
+			"bundle": bndl.ID(),
+		}).Debug("Opened stream")
 	}
 
 	buff := new(bytes.Buffer)
@@ -205,6 +210,11 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 			}).Debug("Error closing stream (marshaling error)")
 		}
 		return err
+	} else {
+		log.WithFields(log.Fields{
+			"peer":   endpoint.peerId,
+			"bundle": bndl.ID(),
+		}).Debug("Marshaled data")
 	}
 
 	// TODO: Do we actually need the bufio-wrapper?
@@ -214,7 +224,7 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 			"peer":   endpoint.peerId,
 			"bundle": bndl.ID(),
 			"error":  err,
-		}).Debug("Error writing to buffer")
+		}).Debug("Error writing to stream")
 
 		stream.CancelWrite(internal.StreamTransmissionError)
 		sErr := stream.Close()
@@ -233,6 +243,11 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 			}
 		}
 		return err
+	} else {
+		log.WithFields(log.Fields{
+			"peer":   endpoint.peerId,
+			"bundle": bndl.ID(),
+		}).Debug("Wrote bundle to stream")
 	}
 
 	if err = writer.Flush(); err != nil {
@@ -259,6 +274,11 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 			}
 		}
 		return err
+	} else {
+		log.WithFields(log.Fields{
+			"peer":   endpoint.peerId,
+			"bundle": bndl.ID(),
+		}).Debug("Flushed buffer")
 	}
 
 	sErr := stream.Close()
