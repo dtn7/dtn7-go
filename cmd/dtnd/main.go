@@ -3,10 +3,8 @@ package main
 import (
 	"net/http"
 	"os"
-	"runtime/pprof"
 	"time"
 
-	"github.com/go-co-op/gocron/v2"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
@@ -102,36 +100,40 @@ func main() {
 	}
 	defer application_agent.GetManagerSingleton().Shutdown()
 
-	s, err := gocron.NewScheduler()
-	if err != nil {
-		log.WithError(err).Fatal("Error initializing cron")
-	}
-	_, err = s.NewJob(
-		gocron.DurationJob(
-			10*time.Second,
-		),
-		gocron.NewTask(
-			processing.DispatchPending,
-		),
-	)
-	if err != nil {
-		log.WithError(err).Fatal("Error initializing dispatching cronjob")
-	}
-	s.Start()
-	defer s.Shutdown()
+	/*
+		s, err := gocron.NewScheduler()
+		if err != nil {
+			log.WithError(err).Fatal("Error initializing cron")
+		}
+		_, err = s.NewJob(
+			gocron.DurationJob(
+				10*time.Second,
+			),
+			gocron.NewTask(
+				processing.DispatchPending,
+			),
+		)
+		if err != nil {
+			log.WithError(err).Fatal("Error initializing dispatching cronjob")
+		}
+		s.Start()
+		defer s.Shutdown()
+	*/
 
-	if conf.Debug.Profiling {
-		f, err := os.Create(conf.Debug.ProfileFile)
-		defer f.Close()
-		if err != nil {
-			log.Fatal(err)
+	/*
+		if conf.Debug.Profiling {
+			f, err := os.Create(conf.Debug.ProfileFile)
+			defer f.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+			err = pprof.StartCPUProfile(f)
+			if err != nil {
+				log.Fatal(err)
+			}
+			defer pprof.StopCPUProfile()
 		}
-		err = pprof.StartCPUProfile(f)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer pprof.StopCPUProfile()
-	}
+	*/
 
 	r := mux.NewRouter()
 	restRouter := r.PathPrefix("/rest").Subrouter()
