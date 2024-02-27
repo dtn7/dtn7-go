@@ -24,6 +24,7 @@ func receiveAsync(bundle *bpv7.Bundle) {
 
 	for _, constraint := range bundleDescriptor.RetentionConstraints {
 		if constraint == store.DispatchPending {
+			log.WithField("bundle", bundleDescriptor.IDString).Debug("Forwarding received bundle")
 			BundleForwarding(bundleDescriptor)
 		}
 	}
