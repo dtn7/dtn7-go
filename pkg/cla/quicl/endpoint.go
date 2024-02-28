@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"golang.org/x/sync/semaphore"
 	"io"
 	"net"
 	"sync/atomic"
@@ -38,6 +39,8 @@ type Endpoint struct {
 	// The actual QUIC connection which transceives data
 	connection quic.Connection
 
+	rateLimiter *semaphore.Weighted
+
 	dialer bool
 	active bool
 
@@ -53,6 +56,7 @@ func NewListenerEndpoint(id bpv7.EndpointID, session quic.Connection) *Endpoint 
 		dialer:      false,
 		active:      false,
 		handshake:   new(uint32),
+		rateLimiter: semaphore.NewWeighted(5),
 	}
 }
 
@@ -63,6 +67,7 @@ func NewDialerEndpoint(peerAddress string, id bpv7.EndpointID) *Endpoint {
 		dialer:      true,
 		active:      false,
 		handshake:   new(uint32),
+		rateLimiter: semaphore.NewWeighted(5),
 	}
 }
 
@@ -168,6 +173,33 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 		return internal.NewInitialisationError("Handshake not yet completed")
 	}
 
+	buff := new(bytes.Buffer)
+	if err := cboring.Marshal(&bndl, buff); err != nil {
+		log.WithFields(log.Fields{
+			"peer":   endpoint.peerId,
+			"bundle": bndl.ID(),
+			"error":  err,
+		}).Debug("Error marshaling data")
+		return err
+	} else {
+		log.WithFields(log.Fields{
+			"peer":   endpoint.peerId,
+			"bundle": bndl.ID(),
+		}).Debug("Marshaled data")
+	}
+
+	ctx := context.Background()
+	err := endpoint.rateLimiter.Acquire(ctx, 1)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"peer":   endpoint.peerId,
+			"bundle": bndl.ID(),
+			"error":  err,
+		}).Debug("Error acquiring lock stream")
+		return err
+	}
+	defer endpoint.rateLimiter.Release(1)
+
 	stream, err := endpoint.connection.OpenStream()
 	if err != nil {
 		// TODO: understand possible error cases
@@ -190,31 +222,6 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 			"peer":   endpoint.peerId,
 			"bundle": bndl.ID(),
 		}).Debug("Opened stream")
-	}
-
-	buff := new(bytes.Buffer)
-	if err = cboring.Marshal(&bndl, buff); err != nil {
-		log.WithFields(log.Fields{
-			"peer":   endpoint.peerId,
-			"bundle": bndl.ID(),
-			"error":  err,
-		}).Debug("Error marshaling data")
-
-		stream.CancelWrite(internal.DataMarshalError)
-		sErr := stream.Close()
-		if sErr != nil {
-			log.WithFields(log.Fields{
-				"peer":   endpoint.peerId,
-				"bundle": bndl.ID(),
-				"error":  sErr,
-			}).Debug("Error closing stream (marshaling error)")
-		}
-		return err
-	} else {
-		log.WithFields(log.Fields{
-			"peer":   endpoint.peerId,
-			"bundle": bndl.ID(),
-		}).Debug("Marshaled data")
 	}
 
 	// TODO: Do we actually need the bufio-wrapper?
