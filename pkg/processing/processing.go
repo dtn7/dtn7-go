@@ -91,7 +91,7 @@ func forwardingAsync(bundleDescriptor *store.BundleDescriptor) {
 }
 
 func BundleForwarding(bundleDescriptor *store.BundleDescriptor) {
-	go forwardingAsync(bundleDescriptor)
+	forwardingAsync(bundleDescriptor)
 }
 
 func bundleContraindicated(bundleDescriptor *store.BundleDescriptor) {
