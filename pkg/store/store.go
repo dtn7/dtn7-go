@@ -143,6 +143,10 @@ func (bst *BundleStore) insertNewBundle(bundle *bpv7.Bundle) (*BundleDescriptor,
 	if previousNodeBlock, err := bundle.ExtensionBlock(bpv7.ExtBlockTypePreviousNodeBlock); err == nil {
 		previousNode := previousNodeBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint()
 		bd.AlreadySentTo = append(bd.AlreadySentTo, previousNode)
+		log.WithFields(log.Fields{
+			"bundle": bd.ID,
+			"sender": previousNode,
+		}).Debug("Added sender to AlreadySentTo")
 	}
 
 	err := storeSingleton.metadataStore.Insert(bd.IDString, bd)
