@@ -5,6 +5,7 @@ import (
 	"github.com/dtn7/dtn7-ng/pkg/discovery"
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	log "github.com/sirupsen/logrus"
@@ -37,6 +38,7 @@ type config struct {
 	Listener  []cla.ListenerConfig
 	Agents    agentsConfig
 	Discovery []discovery.Announcement
+	Cron      cronConfig
 }
 
 type tomlConfig struct {
@@ -46,6 +48,7 @@ type tomlConfig struct {
 	Routing  tomlRoutingConfig
 	Listener []listenerTomlConfig
 	Agents   agentsConfig
+	Cron     cronTomlConfig
 }
 
 type storeConfig struct {
@@ -73,6 +76,14 @@ type agentsConfig struct {
 // agentsWebserverConfig describes the nested "Webserver" configuration for agents.
 type agentsRESTConfig struct {
 	Address string
+}
+
+type cronConfig struct {
+	Dispatch time.Duration
+}
+
+type cronTomlConfig struct {
+	Dispatch string
 }
 
 func parseListenPort(endpoint string) (port int, err error) {
@@ -112,13 +123,14 @@ func parse(filename string) (config, error) {
 	// Store configuration needs no parsing
 	conf.Store = tomlConf.Store
 
+	// Parse routing configuration
 	algorithm, err := routing.AlgorithmEnumFromString(tomlConf.Routing.Algorithm)
 	if err != nil {
 		return config{}, NewConfigError("Error parsing routing Algorithm", err)
 	}
-
 	conf.Routing = routingConfig{Algorithm: algorithm}
 
+	// Parse listener configuration
 	for _, listener := range tomlConf.Listener {
 		claType, err := cla.TypeFromString(listener.Type)
 		if err != nil {
@@ -133,7 +145,15 @@ func parse(filename string) (config, error) {
 		conf.Discovery = append(conf.Discovery, discovery.Announcement{Type: claType, Port: uint(port), Endpoint: nodeID})
 	}
 
+	// Agents config needs no parsing
 	conf.Agents = tomlConf.Agents
+
+	// Parse cron config
+	dispatchTime, err := time.ParseDuration(tomlConf.Cron.Dispatch)
+	if err != nil {
+		return config{}, NewConfigError("Error parsing dispatch period", err)
+	}
+	conf.Cron.Dispatch = dispatchTime
 
 	return conf, nil
 }

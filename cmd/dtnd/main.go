@@ -37,24 +37,28 @@ func main() {
 		TimestampFormat: "2006-01-02T15:04:05.000",
 	})
 
+	processing.SetOwnNodeID(conf.NodeID)
+
+	// Setup Store
 	err = store.InitialiseStore(conf.NodeID, conf.Store.Path)
 	if err != nil {
 		log.WithField("error", err).Fatal("Error initialising store")
 	}
 	defer store.GetStoreSingleton().Close()
 
+	// Setup IdKeeper
 	err = id_keeper.InitializeIdKeeper()
 	if err != nil {
 		log.WithField("error", err).Fatal("Error initialising IdKeeper")
 	}
 
+	// Setup routing
 	err = routing.InitialiseAlgorithm(conf.Routing.Algorithm)
 	if err != nil {
 		log.WithField("error", err).Fatal("Error initialising routing algorithm")
 	}
 
-	processing.SetOwnNodeID(conf.NodeID)
-
+	// Setup CLAs
 	err = cla.InitialiseCLAManager(processing.ReceiveBundle, processing.NewPeer, routing.GetAlgorithmSingleton().NotifyPeerDisappeared)
 	if err != nil {
 		log.WithField("error", err).Fatal("Error initialising CLAs")
@@ -85,6 +89,7 @@ func main() {
 		}
 	}
 
+	// Setup neighbour discovery
 	err = discovery.InitialiseManager(conf.NodeID, conf.Discovery, 2*time.Second, true, false)
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -93,19 +98,13 @@ func main() {
 	}
 	defer discovery.GetManagerSingleton().Close()
 
-	err = application_agent.InitialiseApplicationAgentManager(processing.ReceiveBundle)
-	if err != nil {
-		log.WithField("error", err).Fatal("Error initialising Application Agent Manager")
-	}
-	defer application_agent.GetManagerSingleton().Shutdown()
-
 	s, err := gocron.NewScheduler()
 	if err != nil {
 		log.WithError(err).Fatal("Error initializing cron")
 	}
 	_, err = s.NewJob(
 		gocron.DurationJob(
-			10*time.Second,
+			conf.Cron.Dispatch,
 		),
 		gocron.NewTask(
 			processing.DispatchPending,
@@ -117,6 +116,14 @@ func main() {
 	s.Start()
 	defer s.Shutdown()
 
+	// Setup application agents
+	err = application_agent.InitialiseApplicationAgentManager(processing.ReceiveBundle)
+	if err != nil {
+		log.WithField("error", err).Fatal("Error initialising Application Agent Manager")
+	}
+	defer application_agent.GetManagerSingleton().Shutdown()
+
+	// TODO: make this asynchronous
 	r := mux.NewRouter()
 	restRouter := r.PathPrefix("/rest").Subrouter()
 	restAgent := application_agent.NewRestAgent(restRouter)

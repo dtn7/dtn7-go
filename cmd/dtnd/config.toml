@@ -16,3 +16,6 @@ address = "localhost:8080"
 [[Listener]]
 type = "QUICL"
 address = ":35037"
+
+[Cron]
+dispatch ="10s"
