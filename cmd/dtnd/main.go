@@ -54,6 +54,8 @@ func main() {
 		log.WithField("error", err).Fatal("Error initialising routing algorithm")
 	}
 
+	processing.SetOwnNodeID(conf.NodeID)
+
 	err = cla.InitialiseCLAManager(processing.ReceiveBundle, routing.GetAlgorithmSingleton().NotifyPeerAppeared, routing.GetAlgorithmSingleton().NotifyPeerDisappeared)
 	if err != nil {
 		log.WithField("error", err).Fatal("Error initialising CLAs")
