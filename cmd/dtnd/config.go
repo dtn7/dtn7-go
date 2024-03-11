@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/BurntSushi/toml"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 	"github.com/dtn7/dtn7-ng/pkg/routing"
@@ -29,6 +31,7 @@ func (e *ConfigError) Unwrap() error { return e.cause }
 
 type config struct {
 	NodeID    bpv7.EndpointID
+	LogLevel  log.Level
 	Store     storeConfig
 	Routing   routingConfig
 	Listener  []cla.ListenerConfig
@@ -38,6 +41,7 @@ type config struct {
 
 type tomlConfig struct {
 	NodeID   string `toml:"node_id"`
+	LogLevel string `toml:"log_level"`
 	Store    storeConfig
 	Routing  tomlRoutingConfig
 	Listener []listenerTomlConfig
@@ -91,13 +95,21 @@ func parse(filename string) (config, error) {
 		Listener: make([]cla.ListenerConfig, 0, len(tomlConf.Listener)),
 	}
 
+	// Parse and set NodeID
 	nodeID, err := bpv7.NewEndpointID(tomlConf.NodeID)
 	if err != nil {
 		return config{}, NewConfigError("Error parsing NodeID", err)
 	}
-
 	conf.NodeID = nodeID
 
+	// Parse and set log level
+	logLevel, err := log.ParseLevel(tomlConf.LogLevel)
+	if err != nil {
+		return config{}, NewConfigError("Error parsing log level", err)
+	}
+	conf.LogLevel = logLevel
+
+	// Store configuration needs no parsing
 	conf.Store = tomlConf.Store
 
 	algorithm, err := routing.AlgorithmEnumFromString(tomlConf.Routing.Algorithm)

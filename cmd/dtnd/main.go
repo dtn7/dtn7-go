@@ -31,8 +31,7 @@ func main() {
 		log.WithField("error", err).Fatal("Config error")
 	}
 
-	//TODO: set log level in config
-	log.SetLevel(log.DebugLevel)
+	log.SetLevel(conf.LogLevel)
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp:   true,
 		TimestampFormat: "2006-01-02T15:04:05.000",
