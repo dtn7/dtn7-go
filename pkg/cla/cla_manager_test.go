@@ -12,32 +12,13 @@ import (
 )
 
 func setup(t *rapid.T) {
-	numberOfListeners := rapid.Uint8Max(10).Draw(t, "Number of Listeners")
-	listeners := make([]ListenerConfig, numberOfListeners)
-	for i := 0; i < len(listeners); i++ {
-		listeners[i] = ListenerConfig{
-			Address: rapid.String().Draw(t, fmt.Sprintf("Listener %v address", i)),
-			Type:    Dummy,
-		}
-	}
+	receive := func(bundle *bpv7.Bundle) {}
+	connect := func(eid bpv7.EndpointID) {}
+	disconnect := func(eid bpv7.EndpointID) {}
 
-	err := InitialiseCLAManager(listeners)
+	err := InitialiseCLAManager(receive, connect, disconnect)
 	if err != nil {
 		t.Fatal(err)
-	}
-
-	initialisedListeners := GetManagerSingleton().GetListeners()
-	for _, listenerConfig := range listeners {
-		present := false
-		for _, listener := range initialisedListeners {
-			if listener.Address() == listenerConfig.Address && listener.Running() {
-				present = true
-				break
-			}
-		}
-		if !present {
-			t.Fatal(fmt.Sprintf("Listener with address %v not present", listenerConfig.Address))
-		}
 	}
 }
 
@@ -45,7 +26,42 @@ func teardown() {
 	GetManagerSingleton().Shutdown()
 }
 
-func TestRegister(t *testing.T) {
+func TestRegisterListener(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		setup(t)
+		defer teardown()
+
+		numberOfListeners := rapid.Uint8Max(10).Draw(t, "Number of Listeners")
+		listeners := make([]*dummy_cla.DummyListener, numberOfListeners)
+		for i := 0; i < len(listeners); i++ {
+			address := rapid.String().Draw(t, fmt.Sprintf("Listener %v address", i))
+			listeners[i] = dummy_cla.NewDummyListener(address)
+		}
+
+		for _, listener := range listeners {
+			err := GetManagerSingleton().RegisterListener(listener)
+			if err != nil {
+				t.Fatal(fmt.Sprintf("Error registering listener %v: %v", listener.Address(), err))
+			}
+		}
+
+		initialisedListeners := GetManagerSingleton().GetListeners()
+		for _, listener := range listeners {
+			present := false
+			for _, initialized := range initialisedListeners {
+				if initialized.Address() == listener.Address() && initialized.Running() {
+					present = true
+					break
+				}
+			}
+			if !present {
+				t.Fatal(fmt.Sprintf("Listener with address %v not present", listener.Address()))
+			}
+		}
+	})
+}
+
+func TestRegisterSender(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
 		setup(t)
 		defer teardown()
