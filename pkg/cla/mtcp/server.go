@@ -16,7 +16,6 @@ import (
 	"github.com/dtn7/cboring"
 
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/cla"
 )
 
 // MTCPServer is an implementation of a Minimal TCP Convergence-Layer server
@@ -27,6 +26,8 @@ type MTCPServer struct {
 	endpointID    bpv7.EndpointID
 	running       bool
 
+	receiveCallback func(*bpv7.Bundle)
+
 	stopSyn chan struct{}
 	stopAck chan struct{}
 }
@@ -34,13 +35,14 @@ type MTCPServer struct {
 // NewMTCPServer creates a new MTCPServer for the given listen address. The
 // permanent flag indicates if this MTCPServer should never be removed from
 // the core.
-func NewMTCPServer(listenAddress string, endpointID bpv7.EndpointID) *MTCPServer {
+func NewMTCPServer(listenAddress string, endpointID bpv7.EndpointID, receiveCallback func(*bpv7.Bundle)) *MTCPServer {
 	return &MTCPServer{
-		listenAddress: listenAddress,
-		endpointID:    endpointID,
-		running:       false,
-		stopSyn:       make(chan struct{}),
-		stopAck:       make(chan struct{}),
+		listenAddress:   listenAddress,
+		endpointID:      endpointID,
+		running:         false,
+		receiveCallback: receiveCallback,
+		stopSyn:         make(chan struct{}),
+		stopAck:         make(chan struct{}),
 	}
 }
 
@@ -59,6 +61,7 @@ func (serv *MTCPServer) Start() error {
 		for {
 			select {
 			case <-serv.stopSyn:
+				serv.running = false
 				_ = ln.Close()
 				close(serv.stopAck)
 
@@ -137,7 +140,7 @@ func (serv *MTCPServer) handleSender(conn net.Conn) {
 				"conn": conn,
 			}).Debug("MTCP handleServer connection received a bundle")
 
-			cla.GetManagerSingleton().NotifyReceive(bndl)
+			serv.receiveCallback(bndl)
 		}
 	}
 }

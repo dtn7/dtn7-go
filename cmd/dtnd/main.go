@@ -71,7 +71,7 @@ func main() {
 		case cla.Dummy:
 			listener = dummy_cla.NewDummyListener(lstConf.Address)
 		case cla.MTCP:
-			srv := mtcp.NewMTCPServer(lstConf.Address, lstConf.EndpointId)
+			srv := mtcp.NewMTCPServer(lstConf.Address, lstConf.EndpointId, cla.GetManagerSingleton().NotifyReceive)
 			listener = srv
 			cla.GetManagerSingleton().Register(srv)
 		case cla.QUICL:

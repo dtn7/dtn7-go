@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2024 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -7,15 +8,16 @@ package mtcp
 import (
 	"fmt"
 	"net"
-	"reflect"
 	"sync"
 	"testing"
+
+	"pgregory.net/rapid"
 
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/cla"
 )
 
-func getRandomPort(t *testing.T) int {
+func getRandomPort(t *rapid.T) int {
 	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
 	if err != nil {
 		t.Error(err)
@@ -31,101 +33,83 @@ func getRandomPort(t *testing.T) int {
 	return l.Addr().(*net.TCPAddr).Port
 }
 
-func TestMTCPServerClient(t *testing.T) {
-	// Address
-	port := getRandomPort(t)
+func setup(t *rapid.T) {
+	receive := func(bundle *bpv7.Bundle) {}
+	connect := func(eid bpv7.EndpointID) {}
+	disconnect := func(eid bpv7.EndpointID) {}
 
-	// Bundle
-	const (
-		clients  = 25
-		packages = 100
-	)
-
-	bndl, err := bpv7.Builder().
-		Source("dtn://src/").
-		Destination("dtn://dest/").
-		CreationTimestampEpoch().
-		Lifetime("60s").
-		BundleCtrlFlags(bpv7.MustNotFragmented).
-		BundleAgeBlock(0).
-		PayloadBlock([]byte("hello world!")).
-		Build()
+	err := cla.InitialiseCLAManager(receive, connect, disconnect)
 	if err != nil {
 		t.Fatal(err)
 	}
+}
 
-	// Server
-	serv := NewMTCPServer(
-		fmt.Sprintf(":%d", port), bpv7.MustNewEndpointID("dtn://mtcpcla/"), false)
-	if err, _ := serv.Start(); err != nil {
-		t.Fatal(err)
-	}
+func teardown() {
+	cla.GetManagerSingleton().Shutdown()
+}
 
-	var counter sync.Map
-	counter.Store("counter", clients*packages)
+func TestSendReceive(t *testing.T) {
+	rapid.Check(t, func(t *rapid.T) {
+		setup(t)
+		defer teardown()
 
-	errCh := make(chan error, clients*packages*2)
+		port := getRandomPort(t)
+		numberOfClients := rapid.IntRange(1, 25).Draw(t, "Number of Clients")
+		numberOfBundles := rapid.IntRange(1, 1000).Draw(t, "Number of Bundles")
+		var wgSend sync.WaitGroup
+		wgSend.Add(numberOfBundles)
+		var wgReceive sync.WaitGroup
+		wgReceive.Add(numberOfBundles)
 
-	go func() {
-		for cs := range serv.Channel() {
-			if cs.MessageType != cla.ReceivedBundle {
-				errCh <- fmt.Errorf("Wrong MessageType %v", cs.MessageType)
-			} else {
-				c, _ := counter.Load("counter")
-				cVal := c.(int) - 1
-				counter.Store("counter", cVal)
-
-				recBndl := cs.Message.(cla.ConvergenceReceivedBundle).Bundle
-				if !reflect.DeepEqual(recBndl, &bndl) {
-					errCh <- fmt.Errorf("Received bundle differs: %v, %v", recBndl, &bndl)
-				} else {
-					errCh <- nil
-				}
-
-				if cVal == 0 {
-					if err := serv.Close(); err != nil {
-						errCh <- err
-					}
-					return
-				}
-			}
+		bundles := make([]bpv7.Bundle, numberOfBundles)
+		for i := 0; i < numberOfBundles; i++ {
+			bundles[i] = bpv7.GenerateBundle(t, i)
 		}
-	}()
 
-	// Clients
-	for c := 0; c < clients; c++ {
-		go func() {
-			client := NewAnonymousMTCPClient(fmt.Sprintf("localhost:%d", port), false)
-			if err, _ := client.Start(); err != nil {
-				errCh <- fmt.Errorf("Starting Client failed: %v", err)
-				return
-			}
+		receiveFunc := func(bundle *bpv7.Bundle) {
+			wgReceive.Done()
+		}
 
-			// Dry each client's channel
-			go func(client cla.ConvergenceSender) {
-				for range client.Channel() {
-				}
-			}(client)
-
-			for i := 0; i < packages; i++ {
-				errCh <- client.Send(bndl)
-			}
-
-			if err := client.Close(); err != nil {
-				errCh <- err
-				return
-			}
-		}()
-	}
-
-	for i := 0; i < clients*packages*2; i++ {
-		if err := <-errCh; err != nil {
+		// Server
+		serv := NewMTCPServer(
+			fmt.Sprintf(":%d", port), bpv7.MustNewEndpointID("dtn://mtcpcla/"), receiveFunc)
+		if err := serv.Start(); err != nil {
 			t.Fatal(err)
 		}
-	}
 
-	c, _ := counter.Load("counter")
-	if c.(int) != 0 {
-		t.Fatalf("Counter is not zero: %d", c.(int))
-	}
+		clients := make([]*MTCPClient, numberOfClients)
+		for i := 0; i < numberOfClients; i++ {
+			client := NewAnonymousMTCPClient(fmt.Sprintf("localhost:%d", port))
+			if err := client.Activate(); err != nil {
+				t.Fatal(fmt.Errorf("starting Client failed: %v", err))
+			}
+			clients[i] = client
+		}
+
+		for i := 0; i < numberOfBundles; i++ {
+			sender := clients[rapid.IntRange(0, len(clients)-1).Draw(t, fmt.Sprintf("Sender %v", i))]
+			go func(i int, sender *MTCPClient) {
+				bundle := bundles[i]
+				err := sender.Send(bundle)
+				wgSend.Done()
+				if err != nil {
+					t.Fatal(err)
+				}
+			}(i, sender)
+		}
+		wgSend.Wait()
+		wgReceive.Wait()
+
+		for _, client := range clients {
+			err := client.Close()
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+
+		err := serv.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	})
 }
