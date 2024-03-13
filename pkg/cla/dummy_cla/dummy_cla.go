@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"math/rand"
+	"sync/atomic"
 	"time"
 
 	"github.com/dtn7/cboring"
@@ -17,7 +18,7 @@ type DummyCLA struct {
 	ownID           bpv7.EndpointID
 	peerID          bpv7.EndpointID
 	transferChannel chan []byte
-	channelActive   bool
+	channelActive   atomic.Bool
 	receiveCallback func(bundle bpv7.Bundle) (interface{}, error)
 }
 
@@ -27,14 +28,12 @@ func NewDummyCLAPair(peerAID bpv7.EndpointID, peerBID bpv7.EndpointID, receiveCa
 		ownID:           peerAID,
 		peerID:          peerBID,
 		transferChannel: transferChannel,
-		channelActive:   true,
 		receiveCallback: receiveCallback,
 	}
 	peerB := DummyCLA{
 		ownID:           peerBID,
 		peerID:          peerAID,
 		transferChannel: transferChannel,
-		channelActive:   true,
 		receiveCallback: receiveCallback,
 	}
 	return &peerA, &peerB
@@ -43,34 +42,41 @@ func NewDummyCLAPair(peerAID bpv7.EndpointID, peerBID bpv7.EndpointID, receiveCa
 func (cla *DummyCLA) Close() error {
 	wait := time.Duration(rand.Intn(10))
 	time.Sleep(time.Millisecond * wait)
-	if cla.channelActive {
-		cla.channelActive = false
+	active := cla.channelActive.Swap(false)
+	if active {
 		close(cla.transferChannel)
 	}
 	return nil
 }
 
 func (cla *DummyCLA) Activate() error {
+	cla.channelActive.Store(true)
 	go cla.handleReceive()
 	return nil
 }
 
 func (cla *DummyCLA) Active() bool {
-	return cla.channelActive
+	return cla.channelActive.Load()
 }
 
 func (cla *DummyCLA) handleReceive() {
 	for {
 		bbytes, more := <-cla.transferChannel
 		if !more {
-			cla.channelActive = false
+			//cla.channelActive = false
 			return
 		}
 		serialiser := bytes.NewReader(bbytes)
 		bundle := bpv7.Bundle{}
 		err := cboring.Unmarshal(&bundle, serialiser)
 		if err == nil {
-			cla.receiveCallback(bundle)
+			_, err = cla.receiveCallback(bundle)
+			if err != nil {
+				log.WithFields(log.Fields{
+					"cla":   cla.Address(),
+					"error": err,
+				}).Error("Error in receive-callback")
+			}
 		} else {
 			log.WithFields(log.Fields{
 				"cla":   cla.Address(),
@@ -100,7 +106,7 @@ func (cla *DummyCLA) Send(bundle bpv7.Bundle) error {
 	}
 	bbytes := serialiser.Bytes()
 
-	if !cla.channelActive {
+	if !cla.channelActive.Load() {
 		return fmt.Errorf("%v shut down", cla.Address())
 	}
 

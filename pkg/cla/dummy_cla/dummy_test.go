@@ -26,8 +26,8 @@ func TestSendReceive(t *testing.T) {
 		peerIDA := bpv7.MustNewEndpointID(rapid.StringMatching(bpv7.DtnEndpointRegexpNotNone).Draw(t, "peerA"))
 		peerIDB := bpv7.MustNewEndpointID(rapid.StringMatching(bpv7.DtnEndpointRegexpNotNone).Draw(t, "peerB"))
 		peerA, peerB := NewDummyCLAPair(peerIDA, peerIDB, receiveFunc)
-		peerA.Start()
-		peerB.Start()
+		_ = peerA.Activate()
+		_ = peerB.Activate()
 		peers := []*DummyCLA{peerA, peerB}
 
 		bundles := make([]bpv7.Bundle, numberOfBundles)
@@ -49,8 +49,8 @@ func TestSendReceive(t *testing.T) {
 		wgSend.Wait()
 		wgReceive.Wait()
 
-		peerA.Close()
+		_ = peerA.Close()
 		time.Sleep(time.Millisecond)
-		peerB.Close()
+		_ = peerB.Close()
 	})
 }
