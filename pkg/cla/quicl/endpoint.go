@@ -10,11 +10,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"golang.org/x/sync/semaphore"
 	"io"
 	"net"
 	"sync/atomic"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 
 	"github.com/dtn7/cboring"
 
@@ -38,6 +39,8 @@ type Endpoint struct {
 	peerAddress string
 	// The actual QUIC connection which transceives data
 	connection quic.Connection
+	// Gets called when a bundle is received
+	receiveCallback func(*bpv7.Bundle)
 
 	rateLimiter *semaphore.Weighted
 
@@ -48,26 +51,28 @@ type Endpoint struct {
 	handshake *uint32
 }
 
-func NewListenerEndpoint(id bpv7.EndpointID, session quic.Connection) *Endpoint {
+func NewListenerEndpoint(id bpv7.EndpointID, session quic.Connection, receiveCallback func(*bpv7.Bundle)) *Endpoint {
 	return &Endpoint{
-		id:          id,
-		peerAddress: session.RemoteAddr().String(),
-		connection:  session,
-		dialer:      false,
-		active:      false,
-		handshake:   new(uint32),
-		rateLimiter: semaphore.NewWeighted(5),
+		id:              id,
+		peerAddress:     session.RemoteAddr().String(),
+		connection:      session,
+		dialer:          false,
+		active:          false,
+		handshake:       new(uint32),
+		receiveCallback: receiveCallback,
+		rateLimiter:     semaphore.NewWeighted(5),
 	}
 }
 
-func NewDialerEndpoint(peerAddress string, id bpv7.EndpointID) *Endpoint {
+func NewDialerEndpoint(peerAddress string, id bpv7.EndpointID, receiveCallback func(*bpv7.Bundle)) *Endpoint {
 	return &Endpoint{
-		id:          id,
-		peerAddress: peerAddress,
-		dialer:      true,
-		active:      false,
-		handshake:   new(uint32),
-		rateLimiter: semaphore.NewWeighted(5),
+		id:              id,
+		peerAddress:     peerAddress,
+		dialer:          true,
+		active:          false,
+		handshake:       new(uint32),
+		receiveCallback: receiveCallback,
+		rateLimiter:     semaphore.NewWeighted(5),
 	}
 }
 
@@ -388,7 +393,7 @@ func (endpoint *Endpoint) handleStream(stream quic.Stream) {
 			"cla": endpoint,
 		}).Debug("quicl received a bundle")
 
-		cla.GetManagerSingleton().NotifyReceive(bundle)
+		endpoint.receiveCallback(bundle)
 	}
 	log.WithFields(log.Fields{
 		"cla":    endpoint,

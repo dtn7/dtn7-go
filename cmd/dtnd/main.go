@@ -75,7 +75,7 @@ func main() {
 			listener = srv
 			cla.GetManagerSingleton().Register(srv)
 		case cla.QUICL:
-			listener = quicl.NewQUICListener(lstConf.Address, lstConf.EndpointId)
+			listener = quicl.NewQUICListener(lstConf.Address, lstConf.EndpointId, cla.GetManagerSingleton().NotifyReceive)
 		default:
 			log.WithField("Type", lstConf.Type).Fatal("Not valid convergence listener type")
 		}
@@ -90,7 +90,7 @@ func main() {
 	}
 
 	// Setup neighbour discovery
-	err = discovery.InitialiseManager(conf.NodeID, conf.Discovery, 2*time.Second, true, false)
+	err = discovery.InitialiseManager(conf.NodeID, conf.Discovery, 2*time.Second, true, false, cla.GetManagerSingleton().NotifyReceive)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err,

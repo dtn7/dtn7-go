@@ -90,7 +90,7 @@ func (listener *Listener) handle() {
 				"address": listener.listenAddress,
 				"peer":    session.RemoteAddr(),
 			}).Info("QUICL listener accepted new connection")
-			endpoint := NewListenerEndpoint(listener.endpointID, session)
+			endpoint := NewListenerEndpoint(listener.endpointID, session, listener.receiveCallback)
 			cla.GetManagerSingleton().Register(endpoint)
 		}
 	}

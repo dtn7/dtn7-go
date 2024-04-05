@@ -23,7 +23,8 @@ import (
 
 // Manager publishes and receives Announcements.
 type Manager struct {
-	NodeId bpv7.EndpointID
+	NodeId          bpv7.EndpointID
+	receiveCallback func(*bpv7.Bundle)
 
 	stopChan4 chan struct{}
 	stopChan6 chan struct{}
@@ -34,14 +35,16 @@ var managerSingleton *Manager
 func InitialiseManager(
 	nodeId bpv7.EndpointID,
 	announcements []Announcement, announcementInterval time.Duration,
-	ipv4, ipv6 bool) error {
+	ipv4, ipv6 bool,
+	receiveCallback func(*bpv7.Bundle)) error {
 
 	if managerSingleton != nil {
 		return util.NewAlreadyInitialisedError("Discovery Manager")
 	}
 
 	var manager = &Manager{
-		NodeId: nodeId,
+		NodeId:          nodeId,
+		receiveCallback: receiveCallback,
 	}
 	if ipv4 {
 		manager.stopChan4 = make(chan struct{})
@@ -158,7 +161,7 @@ func (manager *Manager) handleDiscovery(announcement Announcement, addr string) 
 	case cla.MTCP:
 		conv = mtcp.NewMTCPClient(fmt.Sprintf("%s:%d", addr, announcement.Port), announcement.Endpoint)
 	case cla.QUICL:
-		conv = quicl.NewDialerEndpoint(fmt.Sprintf("%s:%d", addr, announcement.Port), manager.NodeId)
+		conv = quicl.NewDialerEndpoint(fmt.Sprintf("%s:%d", addr, announcement.Port), manager.NodeId, manager.receiveCallback)
 	default:
 		log.WithField("cType", announcement.Type).Error("Invalid cType")
 		return
