@@ -7,6 +7,7 @@ package quicl
 import (
 	"context"
 	"errors"
+	"sync/atomic"
 
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/dtn7/dtn7-ng/pkg/cla"
@@ -19,22 +20,23 @@ type Listener struct {
 	listenAddress string
 	endpointID    bpv7.EndpointID
 	quicListener  *quic.Listener
-	running       bool
+	running       atomic.Bool
 
-	registerCallback func(id bpv7.EndpointID)
+	receiveCallback func(*bpv7.Bundle)
 }
 
-func NewQUICListener(listenAddress string, endpointID bpv7.EndpointID) *Listener {
+func NewQUICListener(listenAddress string, endpointID bpv7.EndpointID, receiveCallback func(*bpv7.Bundle)) *Listener {
 	return &Listener{
-		listenAddress: listenAddress,
-		endpointID:    endpointID,
-		quicListener:  nil,
-		running:       false,
+		listenAddress:   listenAddress,
+		endpointID:      endpointID,
+		quicListener:    nil,
+		receiveCallback: receiveCallback,
 	}
 }
 
 func (listener *Listener) Close() error {
 	log.WithField("address", listener.listenAddress).Info("Shutting ourselves down")
+	listener.running.Store(false)
 	return listener.quicListener.Close()
 }
 
@@ -49,13 +51,13 @@ func (listener *Listener) Start() error {
 	listener.quicListener = lst
 	go listener.handle()
 
-	listener.running = true
+	listener.running.Store(true)
 
 	return nil
 }
 
 func (listener *Listener) Running() bool {
-	return listener.running
+	return listener.running.Load()
 }
 
 func (listener *Listener) Address() string {
