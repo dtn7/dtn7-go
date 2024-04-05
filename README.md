@@ -8,7 +8,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 -->
 
 # dtn7-go
-[![Release](https://img.shields.io/github/v/tag/dtn7/dtn7-go?label=version)](https://github.com/dtn7/dtn7-go/releases)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/dtn7/dtn7-go)](https://pkg.go.dev/github.com/dtn7/dtn7-go)
 
 Delay-Tolerant Networking software suite and library based on the Bundle Protocol Version 7 ([RFC 9171](https://datatracker.ietf.org/doc/html/rfc9171)).
@@ -76,6 +75,3 @@ Installing Go via [homebrew](https://brew.sh), should solve permission errors wh
 ## License
 
 This project's code is licensed under the [GNU General Public License version 3 (_GPL-3.0-or-later_)](LICENSE).
-
-
-[PkgGoDev]: https://pkg.go.dev/github.com/dtn7/dtn7-go
