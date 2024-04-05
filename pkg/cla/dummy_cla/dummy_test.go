@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"pgregory.net/rapid"
@@ -48,9 +47,5 @@ func TestSendReceive(t *testing.T) {
 		}
 		wgSend.Wait()
 		wgReceive.Wait()
-
-		_ = peerA.Close()
-		time.Sleep(time.Millisecond)
-		_ = peerB.Close()
 	})
 }
