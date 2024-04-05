@@ -6,8 +6,9 @@
 package id_keeper
 
 import (
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"testing"
+
+	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 )
 
 func TestIdKeeper(t *testing.T) {
@@ -37,7 +38,7 @@ func TestIdKeeper(t *testing.T) {
 		t.Errorf("Creating bundle failed: %v", err)
 	}
 
-	InitializeIdKeeper()
+	_ = InitializeIdKeeper()
 
 	keeper := GetIdKeeperSingleton()
 
