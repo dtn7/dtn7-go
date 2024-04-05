@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/cla/dummy_cla"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/cla/dummy_cla"
 	log "github.com/sirupsen/logrus"
 	"pgregory.net/rapid"
 )

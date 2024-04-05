@@ -3,8 +3,9 @@ package store
 import (
 	"time"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
 type BundleDescriptor struct {

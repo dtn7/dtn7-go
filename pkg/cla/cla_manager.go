@@ -3,8 +3,8 @@ package cla
 import (
 	"sync"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/util"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
 

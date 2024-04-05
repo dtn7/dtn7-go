@@ -4,7 +4,7 @@
 
 package application_agent
 
-import "github.com/dtn7/dtn7-ng/pkg/bpv7"
+import "github.com/dtn7/dtn7-go/pkg/bpv7"
 
 // RestRegisterRequest describes a JSON to be POSTed to /register.
 type RestRegisterRequest struct {

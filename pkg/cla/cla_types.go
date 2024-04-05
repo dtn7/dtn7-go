@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
 // CLAType is one of the supported Convergence Layer Adaptors

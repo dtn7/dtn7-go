@@ -8,13 +8,14 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dtn7/dtn7-ng/pkg/util"
-
-	"github.com/dtn7/cboring"
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"github.com/hashicorp/go-multierror"
 	log "github.com/sirupsen/logrus"
 	"github.com/timshannon/badgerhold/v4"
+
+	"github.com/dtn7/cboring"
+
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/util"
 )
 
 type BundleStore struct {

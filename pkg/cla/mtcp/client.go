@@ -20,8 +20,8 @@ import (
 
 	"github.com/dtn7/cboring"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/cla"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/cla"
 )
 
 // MTCPClient is an implementation of a Minimal TCP Convergence-Layer client

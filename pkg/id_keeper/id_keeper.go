@@ -10,8 +10,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/util"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/util"
 )
 
 // idTuple is a tuple struct for looking up a bundle's ID - based on its source

@@ -15,8 +15,8 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/store"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
 // RestAgent is a RESTful Application Agent for simple bundle dispatching.

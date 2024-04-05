@@ -9,16 +9,16 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-ng/pkg/application_agent"
-	"github.com/dtn7/dtn7-ng/pkg/cla"
-	"github.com/dtn7/dtn7-ng/pkg/cla/dummy_cla"
-	"github.com/dtn7/dtn7-ng/pkg/cla/mtcp"
-	"github.com/dtn7/dtn7-ng/pkg/cla/quicl"
-	"github.com/dtn7/dtn7-ng/pkg/discovery"
-	"github.com/dtn7/dtn7-ng/pkg/id_keeper"
-	"github.com/dtn7/dtn7-ng/pkg/processing"
-	"github.com/dtn7/dtn7-ng/pkg/routing"
-	"github.com/dtn7/dtn7-ng/pkg/store"
+	"github.com/dtn7/dtn7-go/pkg/application_agent"
+	"github.com/dtn7/dtn7-go/pkg/cla"
+	"github.com/dtn7/dtn7-go/pkg/cla/dummy_cla"
+	"github.com/dtn7/dtn7-go/pkg/cla/mtcp"
+	"github.com/dtn7/dtn7-go/pkg/cla/quicl"
+	"github.com/dtn7/dtn7-go/pkg/discovery"
+	"github.com/dtn7/dtn7-go/pkg/id_keeper"
+	"github.com/dtn7/dtn7-go/pkg/processing"
+	"github.com/dtn7/dtn7-go/pkg/routing"
+	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
 func main() {

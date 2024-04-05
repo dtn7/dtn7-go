@@ -7,18 +7,16 @@ package discovery
 
 import (
 	"fmt"
-	"github.com/dtn7/dtn7-ng/pkg/cla/mtcp"
-	"github.com/dtn7/dtn7-ng/pkg/cla/quicl"
 	"time"
 
-	"github.com/dtn7/dtn7-ng/pkg/util"
-
+	"github.com/schollz/peerdiscovery"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/schollz/peerdiscovery"
-
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/cla"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/cla"
+	"github.com/dtn7/dtn7-go/pkg/cla/mtcp"
+	"github.com/dtn7/dtn7-go/pkg/cla/quicl"
+	"github.com/dtn7/dtn7-go/pkg/util"
 )
 
 // Manager publishes and receives Announcements.

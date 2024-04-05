@@ -3,8 +3,8 @@ package application_agent
 import (
 	"fmt"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/store"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
 type ApplicationAgent interface {

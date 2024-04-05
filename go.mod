@@ -1,4 +1,4 @@
-module github.com/dtn7/dtn7-ng
+module github.com/dtn7/dtn7-go
 
 go 1.22
 

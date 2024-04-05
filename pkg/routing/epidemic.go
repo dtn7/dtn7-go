@@ -8,9 +8,9 @@ package routing
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/cla"
-	"github.com/dtn7/dtn7-ng/pkg/store"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/cla"
+	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
 // EpidemicRouting is an implementation of an Algorithm and behaves in a

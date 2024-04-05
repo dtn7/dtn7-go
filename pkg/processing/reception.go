@@ -1,11 +1,12 @@
 package processing
 
 import (
-	"github.com/dtn7/dtn7-ng/pkg/application_agent"
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/routing"
-	"github.com/dtn7/dtn7-ng/pkg/store"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/pkg/application_agent"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/routing"
+	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
 func receiveAsync(bundle *bpv7.Bundle) {

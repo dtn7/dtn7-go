@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/dtn7/dtn7-ng/pkg/discovery"
 	"net"
 	"strconv"
 	"time"
@@ -10,9 +9,10 @@ import (
 	"github.com/BurntSushi/toml"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
-	"github.com/dtn7/dtn7-ng/pkg/cla"
-	"github.com/dtn7/dtn7-ng/pkg/routing"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/cla"
+	"github.com/dtn7/dtn7-go/pkg/discovery"
+	"github.com/dtn7/dtn7-go/pkg/routing"
 )
 
 type ConfigError struct {

@@ -8,7 +8,7 @@ package id_keeper
 import (
 	"testing"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
 func TestIdKeeper(t *testing.T) {

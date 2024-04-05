@@ -6,8 +6,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/dtn7/dtn7-ng/pkg/bpv7"
 	"pgregory.net/rapid"
+
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
 func initTest(t *rapid.T) {
