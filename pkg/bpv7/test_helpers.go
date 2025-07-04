@@ -2,11 +2,29 @@ package bpv7
 
 import (
 	"fmt"
+	"testing"
 
 	"pgregory.net/rapid"
 )
 
-func GenerateBundle(t *rapid.T, i int) Bundle {
+func GenerateSampleBundle(t *testing.T) Bundle {
+	bndl, err := Builder().
+		CRC(CRC32).
+		Source("dtn://myself/").
+		Destination("dtn://dest/").
+		CreationTimestampEpoch().
+		Lifetime("10m").
+		HopCountBlock(64).
+		BundleAgeBlock(0).
+		PayloadBlock([]byte("hello world!")).
+		Build()
+	if err != nil {
+		t.Fatalf("Error during bundle creation %s", err)
+	}
+	return bndl
+}
+
+func GenerateRandomizedBundle(t *rapid.T, i int) Bundle {
 	// TODO: more variable data
 	bndl, err := Builder().
 		CRC(CRC32).

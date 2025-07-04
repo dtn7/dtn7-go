@@ -3,9 +3,11 @@ package quicl
 import (
 	"fmt"
 	"net"
-	"sync"
+	"reflect"
 	"testing"
+	"time"
 
+	log "github.com/sirupsen/logrus"
 	"pgregory.net/rapid"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
@@ -13,8 +15,9 @@ import (
 )
 
 const (
-	maxClients = 1
-	maxBundles = 1
+	testTimeout = "10s"
+	maxClients  = 10
+	maxBundles  = 10
 )
 
 func getRandomPort(t *rapid.T) int {
@@ -33,7 +36,7 @@ func getRandomPort(t *rapid.T) int {
 	return l.LocalAddr().(*net.UDPAddr).Port
 }
 
-func setup(t *rapid.T) {
+func setup(t *testing.T) {
 	receive := func(bundle *bpv7.Bundle) {}
 	connect := func(eid bpv7.EndpointID) {}
 	disconnect := func(eid bpv7.EndpointID) {}
@@ -48,10 +51,56 @@ func teardown() {
 	cla.GetManagerSingleton().Shutdown()
 }
 
-func TestSendReceive(t *testing.T) {
+func TestSingle(t *testing.T) {
+	setup(t)
+	defer teardown()
+
+	timeout, err := time.ParseDuration(testTimeout)
+	if err != nil {
+		t.Fatalf("Error parsing timeout: %v", err.Error())
+	}
+
+	bndl := bpv7.GenerateSampleBundle(t)
+	port := 35037
+	recvChan := make(chan bpv7.Bundle)
+
+	receiveFunc := func(bundle *bpv7.Bundle) {
+		log.WithField("bundle", bundle).Debug("Received bundle")
+		recvChan <- *bundle
+	}
+
+	// Server
+	serv := NewQUICListener(
+		fmt.Sprintf(":%d", port), bpv7.MustNewEndpointID("dtn://quicl/"), receiveFunc)
+	if err := serv.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	client := NewDialerEndpoint(fmt.Sprintf("localhost:%d", port), bpv7.DtnNone(), receiveFunc)
+	if err := client.Activate(); err != nil {
+		t.Fatal(fmt.Errorf("starting Client failed: %v", err))
+	}
+	err = client.Send(bndl)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	select {
+	case bndlRecv := <-recvChan:
+		if !reflect.DeepEqual(bndl, bndlRecv) {
+			t.Fatalf("Bundle changed during transmission: %v, %v", bndl, bndlRecv)
+		}
+	case <-time.After(timeout):
+		t.Fatalf("Test timed out") // timed out
+	}
+}
+
+// FIXME: the waitgroup-thing is crap, since if the test fails, it just hangs forever. Need to find a better way...
+/*
+func TestProperty(t *testing.T) {
+	setup(t)
+	defer teardown()
 	rapid.Check(t, func(t *rapid.T) {
-		setup(t)
-		defer teardown()
 
 		port := getRandomPort(t)
 		numberOfClients := rapid.IntRange(1, maxClients).Draw(t, "Number of Clients")
@@ -63,7 +112,7 @@ func TestSendReceive(t *testing.T) {
 
 		bundles := make([]bpv7.Bundle, numberOfBundles)
 		for i := 0; i < numberOfBundles; i++ {
-			bundles[i] = bpv7.GenerateBundle(t, i)
+			bundles[i] = bpv7.GenerateRandomizedBundle(t, i)
 		}
 
 		receiveFunc := func(bundle *bpv7.Bundle) {
@@ -113,3 +162,4 @@ func TestSendReceive(t *testing.T) {
 		}
 	})
 }
+*/

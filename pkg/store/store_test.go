@@ -39,7 +39,7 @@ func TestBundleInsertion(t *testing.T) {
 		initTest(t)
 		defer cleanupTest(t)
 
-		bundle := bpv7.GenerateBundle(t, 0)
+		bundle := bpv7.GenerateRandomizedBundle(t, 0)
 		bd, err := GetStoreSingleton().insertNewBundle(&bundle)
 		if err != nil {
 			t.Fatal(err)
@@ -70,7 +70,7 @@ func TestConstraints(t *testing.T) {
 		initTest(t)
 		defer cleanupTest(t)
 
-		bundle := bpv7.GenerateBundle(t, 0)
+		bundle := bpv7.GenerateRandomizedBundle(t, 0)
 		bd, err := GetStoreSingleton().insertNewBundle(&bundle)
 		if err != nil {
 			t.Fatal(err)

@@ -13,20 +13,7 @@ import (
 )
 
 func TestBundleBuilderSimple(t *testing.T) {
-	bndl, err := Builder().
-		CRC(CRC32).
-		Source("dtn://myself/").
-		Destination("dtn://dest/").
-		CreationTimestampEpoch().
-		Lifetime("10m").
-		HopCountBlock(64).
-		BundleAgeBlock(0).
-		PayloadBlock([]byte("hello world!")).
-		Build()
-
-	if err != nil {
-		t.Fatalf("Builder erred: %v", err)
-	}
+	bndl := GenerateSampleBundle(t)
 
 	buff := new(bytes.Buffer)
 	if err := bndl.MarshalCbor(buff); err != nil {
@@ -35,7 +22,7 @@ func TestBundleBuilderSimple(t *testing.T) {
 	bndlCbor := buff.Bytes()
 
 	bndl2 := Bundle{}
-	if err = bndl2.UnmarshalCbor(buff); err != nil {
+	if err := bndl2.UnmarshalCbor(buff); err != nil {
 		t.Fatal(err)
 	}
 
