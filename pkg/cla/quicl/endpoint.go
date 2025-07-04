@@ -38,7 +38,7 @@ type Endpoint struct {
 	// The address in HOST:PORT format of the remote peer
 	peerAddress string
 	// The actual QUIC connection which transceives data
-	connection quic.Connection
+	connection *quic.Conn
 	// Gets called when a bundle is received
 	receiveCallback func(*bpv7.Bundle)
 
@@ -51,7 +51,7 @@ type Endpoint struct {
 	handshake *uint32
 }
 
-func NewListenerEndpoint(id bpv7.EndpointID, session quic.Connection, receiveCallback func(*bpv7.Bundle)) *Endpoint {
+func NewListenerEndpoint(id bpv7.EndpointID, session *quic.Conn, receiveCallback func(*bpv7.Bundle)) *Endpoint {
 	return &Endpoint{
 		id:              id,
 		peerAddress:     session.RemoteAddr().String(),
@@ -367,7 +367,7 @@ func (endpoint *Endpoint) handleConnection() {
 
 // handleStream hadles incoming bundles
 // A single stream will always carry a single bundle, and will be closed once the bundle has been transmitted
-func (endpoint *Endpoint) handleStream(stream quic.Stream) {
+func (endpoint *Endpoint) handleStream(stream *quic.Stream) {
 	log.WithField("cla", endpoint).Debug("Receiving bundle via quicl")
 
 	// TODO: Do we actually need the bufio-wrapper?
@@ -471,7 +471,7 @@ func (endpoint *Endpoint) handshakeDialer() error {
 // sendEndpointID sends this CLA's EndpointID (the one which is stored in the id-field) over a given QUIC stream.
 // The EndpointID is first marshalled into a buffer using its builtin cboring marshaller.
 // We then send the length of the buffer (using cboring ByteStringLen) followed by the ID itself.
-func (endpoint *Endpoint) sendEndpointID(stream quic.Stream) error {
+func (endpoint *Endpoint) sendEndpointID(stream *quic.Stream) error {
 	log.WithField("cla", endpoint).Debug("Sending own endpoint id")
 
 	buff := new(bytes.Buffer)
@@ -499,7 +499,7 @@ func (endpoint *Endpoint) sendEndpointID(stream quic.Stream) error {
 // receiveEndpointID receives a remote CLA's EndpointID over a given QUIC stream
 // The serialised form consists of the cbor representation of the EndpointID,
 // wrapped in a cbor byte-string
-func (endpoint *Endpoint) receiveEndpointID(stream quic.Stream) error {
+func (endpoint *Endpoint) receiveEndpointID(stream *quic.Stream) error {
 	log.WithField("cla", endpoint).Debug("Receiving peer's endpoint id")
 	reader := bufio.NewReader(stream)
 

@@ -2,6 +2,7 @@ package bpv7
 
 import (
 	"fmt"
+
 	"pgregory.net/rapid"
 )
 
