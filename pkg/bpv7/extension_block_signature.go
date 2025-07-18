@@ -41,7 +41,7 @@ type SignatureBlock struct {
 
 // BlockTypeCode must return a constant integer, indicating the block type code.
 func (s *SignatureBlock) BlockTypeCode() uint64 {
-	return ExtBlockTypeSignatureBlock
+	return BlockTypeSignatureBlock
 }
 
 // BlockTypeName must return a constant string, this block's name.
@@ -55,7 +55,7 @@ func signatureBundleData(b Bundle) (pbData bytes.Buffer, err error) {
 		return
 	}
 
-	if pb, pbErr := b.ExtensionBlock(ExtBlockTypePayloadBlock); pbErr != nil {
+	if pb, pbErr := b.ExtensionBlock(BlockTypePayloadBlock); pbErr != nil {
 		err = pbErr
 	} else {
 		err = cboring.Marshal(pb, &pbData)

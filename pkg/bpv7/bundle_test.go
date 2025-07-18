@@ -124,15 +124,15 @@ func TestBundleExtensionBlock(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if cb, err := bndl.ExtensionBlock(ExtBlockTypePreviousNodeBlock); err == nil {
+	if cb, err := bndl.ExtensionBlock(BlockTypePreviousNodeBlock); err == nil {
 		t.Fatalf("Bundle returned a non-existing Extension Block: %v", cb)
 	}
 
-	if _, err := bndl.ExtensionBlock(ExtBlockTypeBundleAgeBlock); err != nil {
+	if _, err := bndl.ExtensionBlock(BlockTypeBundleAgeBlock); err != nil {
 		t.Fatalf("Bundle did not returned the existing Bundle Age block: %v", err)
 	}
 
-	if _, err := bndl.ExtensionBlock(ExtBlockTypePayloadBlock); err != nil {
+	if _, err := bndl.ExtensionBlock(BlockTypePayloadBlock); err != nil {
 		t.Fatalf("Bundle did not returned the existing Payload block: %v", err)
 	}
 
@@ -228,23 +228,23 @@ func TestBundleAddRemoveExtensionBlocks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if b.HasExtensionBlock(ExtBlockTypePreviousNodeBlock) {
+	if b.HasExtensionBlock(BlockTypePreviousNodeBlock) {
 		t.Fatalf("previous node block is present")
 	}
 	err = b.AddExtensionBlock(NewCanonicalBlock(0, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn://prev/"))))
 	if err != nil {
 		t.Fatalf("adding PreviousNodeBlock resulted in error: %v", err)
 	}
-	if !b.HasExtensionBlock(ExtBlockTypePreviousNodeBlock) {
+	if !b.HasExtensionBlock(BlockTypePreviousNodeBlock) {
 		t.Fatalf("previous node block is not present")
 	}
 
-	if previousNodeBlock, err := b.ExtensionBlock(ExtBlockTypePreviousNodeBlock); err != nil {
+	if previousNodeBlock, err := b.ExtensionBlock(BlockTypePreviousNodeBlock); err != nil {
 		t.Fatal(err)
 	} else {
 		b.RemoveExtensionBlockByBlockNumber(previousNodeBlock.BlockNumber)
 	}
-	if b.HasExtensionBlock(ExtBlockTypePreviousNodeBlock) {
+	if b.HasExtensionBlock(BlockTypePreviousNodeBlock) {
 		t.Fatalf("previous node block is present")
 	}
 }

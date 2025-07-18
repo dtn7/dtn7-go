@@ -63,7 +63,7 @@ func TestCanonicalBlockNumberSort(t *testing.T) {
 		}
 	}
 
-	if blockNumber := canonicals[len(canonicals)-1].BlockNumber; blockNumber != ExtBlockTypePayloadBlock {
+	if blockNumber := canonicals[len(canonicals)-1].BlockNumber; blockNumber != BlockTypePayloadBlock {
 		t.Fatalf("last block's block number is %d", blockNumber)
 	}
 }

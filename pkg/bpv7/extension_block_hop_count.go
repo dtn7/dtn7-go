@@ -20,7 +20,7 @@ type HopCountBlock struct {
 
 // BlockTypeCode must return a constant integer, indicating the block type code.
 func (hcb *HopCountBlock) BlockTypeCode() uint64 {
-	return ExtBlockTypeHopCountBlock
+	return BlockTypeHopCountBlock
 }
 
 // BlockTypeName must return a constant string, this block's name.
@@ -109,7 +109,7 @@ func (hcb *HopCountBlock) CheckValid() error {
 
 // CheckContextValid that there is at most one Hop Count Block.
 func (hcb *HopCountBlock) CheckContextValid(b *Bundle) error {
-	cb, err := b.ExtensionBlock(ExtBlockTypeHopCountBlock)
+	cb, err := b.ExtensionBlock(BlockTypeHopCountBlock)
 
 	if err != nil {
 		return err

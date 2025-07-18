@@ -17,7 +17,7 @@ type BundleAgeBlock uint64
 
 // BlockTypeCode must return a constant integer, indicating the block type code.
 func (bab *BundleAgeBlock) BlockTypeCode() uint64 {
-	return ExtBlockTypeBundleAgeBlock
+	return BlockTypeBundleAgeBlock
 }
 
 // BlockTypeName must return a constant string, this block's name.
@@ -70,7 +70,7 @@ func (bab *BundleAgeBlock) CheckValid() error {
 
 // CheckContextValid that there is at most one Bundle Age Block.
 func (bab *BundleAgeBlock) CheckContextValid(b *Bundle) error {
-	cb, err := b.ExtensionBlock(ExtBlockTypeBundleAgeBlock)
+	cb, err := b.ExtensionBlock(BlockTypeBundleAgeBlock)
 
 	if err != nil {
 		return err

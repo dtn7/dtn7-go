@@ -33,7 +33,7 @@ func (pBlock *ProphetBlock) GetPredictabilities() map[EndpointID]float64 {
 }
 
 func (pBlock *ProphetBlock) BlockTypeCode() uint64 {
-	return ExtBlockTypeProphetBlock
+	return BlockTypeProphetBlock
 }
 
 func (pBlock *ProphetBlock) BlockTypeName() string {

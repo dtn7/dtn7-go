@@ -17,39 +17,6 @@ import (
 	"github.com/dtn7/cboring"
 )
 
-// Sorted list of all known block type codes to prevent double usage.
-const (
-	// ExtBlockTypePayloadBlock is the block type code for a Payload Block, bpv7/extension_block_payload.go
-	ExtBlockTypePayloadBlock uint64 = 1
-
-	// ExtBlockTypeBlockIntegrityBlock is the block type code for an Integrity Block
-	ExtBlockTypeBlockIntegrityBlock uint64 = 3
-
-	// ExtBlockTypeBlockConfidentialityBlock is the block type code for a Confidentiality Block
-	ExtBlockTypeBlockConfidentialityBlock uint64 = 4
-
-	// ExtBlockTypePreviousNodeBlock is the block type code for a Previous Node Block, bpv7/extension_block_previous_node.go
-	ExtBlockTypePreviousNodeBlock uint64 = 6
-
-	// ExtBlockTypeBundleAgeBlock is the block type code for a Bundle Age Block, bpv7/extension_block_bundle_age.go
-	ExtBlockTypeBundleAgeBlock uint64 = 7
-
-	// ExtBlockTypeHopCountBlock is the block type code for a Hop Count Block, bpv7/extension_block_hop_count.go
-	ExtBlockTypeHopCountBlock uint64 = 10
-
-	// ExtBlockTypeBinarySprayBlock is the custom block type code for a BinarySprayBlock, bpv7/extension_block_spray.go
-	ExtBlockTypeBinarySprayBlock uint64 = 192
-
-	// ExtBlockTypeDTLSRBlock is the custom block type code for a DTLSRBlock, bpv7/extension_block_dtlsr.go
-	ExtBlockTypeDTLSRBlock uint64 = 193
-
-	// ExtBlockTypeProphetBlock is the custom block type code for a ProphetBlock, bpv7/extension_block_prophet.go
-	ExtBlockTypeProphetBlock uint64 = 194
-
-	// ExtBlockTypeSignatureBlock is the custom block type code for a SignatureBlock, bpv7/extension_block_signature.go
-	ExtBlockTypeSignatureBlock uint64 = 195
-)
-
 // ExtensionBlock describes the block-type specific data of any Canonical Block.
 //
 // Such an ExtensionBlock must implement either the cboring.CborMarshaler interface, if its serializable

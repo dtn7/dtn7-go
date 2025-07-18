@@ -21,9 +21,9 @@ func (cbns canonicalBlockNumberSort) Len() int {
 // Thus, if element i is a Payload Block, this function returns false because this block must always be the last one,
 // et vice versa. Otherwise, the block numbers are compared in ascending order.
 func (cbns canonicalBlockNumberSort) Less(i, j int) bool {
-	if cbns[i].BlockNumber == ExtBlockTypePayloadBlock {
+	if cbns[i].BlockNumber == BlockTypePayloadBlock {
 		return false
-	} else if cbns[j].BlockNumber == ExtBlockTypePayloadBlock {
+	} else if cbns[j].BlockNumber == BlockTypePayloadBlock {
 		return true
 	} else {
 		return cbns[i].BlockNumber < cbns[j].BlockNumber

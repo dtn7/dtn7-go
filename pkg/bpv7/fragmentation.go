@@ -64,7 +64,7 @@ func (b Bundle) Fragment(mtu int) (bs []Bundle, err error) {
 		fragBundle := MustNewBundle(fragPrimaryBlock, nil)
 
 		for _, cb := range b.CanonicalBlocks {
-			if cb.TypeCode() == ExtBlockTypePayloadBlock {
+			if cb.TypeCode() == BlockTypePayloadBlock {
 				continue
 			}
 			if i > 0 && !cb.BlockControlFlags.Has(ReplicateBlock) {
@@ -130,7 +130,7 @@ func fragmentExtensionBlocksLen(b Bundle, mtu int) (first int, others int, err e
 	buff := new(bytes.Buffer)
 
 	for _, cb := range b.CanonicalBlocks {
-		if cb.TypeCode() == ExtBlockTypePayloadBlock {
+		if cb.TypeCode() == BlockTypePayloadBlock {
 			cb = CanonicalBlock{
 				BlockNumber:       cb.BlockNumber,
 				BlockControlFlags: cb.BlockControlFlags,
@@ -150,7 +150,7 @@ func fragmentExtensionBlocksLen(b Bundle, mtu int) (first int, others int, err e
 			others += cbLen
 		}
 
-		if cb.TypeCode() == ExtBlockTypePayloadBlock {
+		if cb.TypeCode() == BlockTypePayloadBlock {
 			// Update the byte string length field
 			buff.Reset()
 			if err = cboring.WriteByteStringLen(uint64(mtu), buff); err != nil {
@@ -241,7 +241,7 @@ func ReassembleFragments(bs []Bundle) (b Bundle, err error) {
 	b.PrimaryBlock.CRC = nil
 
 	for _, cb := range bs[0].CanonicalBlocks {
-		if cb.TypeCode() == ExtBlockTypePayloadBlock {
+		if cb.TypeCode() == BlockTypePayloadBlock {
 			continue
 		}
 

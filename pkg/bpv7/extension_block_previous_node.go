@@ -17,7 +17,7 @@ type PreviousNodeBlock EndpointID
 
 // BlockTypeCode must return a constant integer, indicating the block type code.
 func (pnb *PreviousNodeBlock) BlockTypeCode() uint64 {
-	return ExtBlockTypePreviousNodeBlock
+	return BlockTypePreviousNodeBlock
 }
 
 // BlockTypeName must return a constant string, this block's name.
@@ -65,7 +65,7 @@ func (pnb *PreviousNodeBlock) CheckValid() error {
 
 // CheckContextValid that there is at most one Previous Node Block.
 func (pnb *PreviousNodeBlock) CheckContextValid(b *Bundle) error {
-	cb, err := b.ExtensionBlock(ExtBlockTypePreviousNodeBlock)
+	cb, err := b.ExtensionBlock(BlockTypePreviousNodeBlock)
 
 	if err != nil {
 		return err

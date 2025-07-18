@@ -176,7 +176,7 @@ func TestSignatureBlockIntegration(t *testing.T) {
 		t.Fatal(buffErr)
 	}
 
-	sbCan, sbCanErr := b2.ExtensionBlock(ExtBlockTypeSignatureBlock)
+	sbCan, sbCanErr := b2.ExtensionBlock(BlockTypeSignatureBlock)
 	if sbCanErr != nil {
 		t.Fatal(sbCanErr)
 	}
@@ -261,7 +261,7 @@ func TestSignatureBlockFragmentSimple(t *testing.T) {
 	}
 
 	for _, frag := range bs {
-		if fragCb, fragErr := frag.ExtensionBlock(ExtBlockTypeSignatureBlock); fragErr != nil {
+		if fragCb, fragErr := frag.ExtensionBlock(BlockTypeSignatureBlock); fragErr != nil {
 			t.Fatal(fragErr)
 		} else if !reflect.DeepEqual(cb.Value, fragCb.Value) {
 			t.Fatalf("Signature Block in fragment differs: %v != %v", sb, fragCb.Value)
@@ -283,7 +283,7 @@ func TestSignatureBlockFragmentSimple(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if b2Sb, b2SbErr := b2.ExtensionBlock(ExtBlockTypeSignatureBlock); b2SbErr != nil {
+	if b2Sb, b2SbErr := b2.ExtensionBlock(BlockTypeSignatureBlock); b2SbErr != nil {
 		t.Fatal(b2SbErr)
 	} else if !b2Sb.Value.(*SignatureBlock).Verify(b2) {
 		t.Fatal("Verification failed")

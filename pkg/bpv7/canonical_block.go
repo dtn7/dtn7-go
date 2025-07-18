@@ -15,7 +15,40 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-// CanonicalBlock represents the canonical bundle block defined in section 4.2.3.
+// Sorted list of all known block type codes to prevent double usage.
+const (
+	// BlockTypePayloadBlock is the block type code for a Payload Block, bpv7/payload_block.go
+	BlockTypePayloadBlock uint64 = 1
+
+	// BlockTypeBlockIntegrityBlock is the block type code for an Integrity Block
+	BlockTypeBlockIntegrityBlock uint64 = 3
+
+	// BlockTypeBlockConfidentialityBlock is the block type code for a Confidentiality Block
+	BlockTypeBlockConfidentialityBlock uint64 = 4
+
+	// BlockTypePreviousNodeBlock is the block type code for a Previous Node Block, bpv7/extension_block_previous_node.go
+	BlockTypePreviousNodeBlock uint64 = 6
+
+	// BlockTypeBundleAgeBlock is the block type code for a Bundle Age Block, bpv7/extension_block_bundle_age.go
+	BlockTypeBundleAgeBlock uint64 = 7
+
+	// BlockTypeHopCountBlock is the block type code for a Hop Count Block, bpv7/extension_block_hop_count.go
+	BlockTypeHopCountBlock uint64 = 10
+
+	// BlockTypeBinarySprayBlock is the custom block type code for a BinarySprayBlock, bpv7/extension_block_spray.go
+	BlockTypeBinarySprayBlock uint64 = 192
+
+	// BlockTypeDTLSRBlock is the custom block type code for a DTLSRBlock, bpv7/extension_block_dtlsr.go
+	BlockTypeDTLSRBlock uint64 = 193
+
+	// BlockTypeProphetBlock is the custom block type code for a ProphetBlock, bpv7/extension_block_prophet.go
+	BlockTypeProphetBlock uint64 = 194
+
+	// BlockTypeSignatureBlock is the custom block type code for a SignatureBlock, bpv7/extension_block_signature.go
+	BlockTypeSignatureBlock uint64 = 195
+)
+
+// CanonicalBlock represents the canonical bundle block defined in section 4.3.2
 type CanonicalBlock struct {
 	BlockNumber       uint64
 	BlockControlFlags BlockControlFlags
@@ -202,7 +235,7 @@ func (cb CanonicalBlock) CheckValid() (errs error) {
 		errs = multierror.Append(errs, extErr)
 	}
 
-	if cb.Value.BlockTypeCode() == ExtBlockTypePayloadBlock && cb.BlockNumber != 1 {
+	if cb.Value.BlockTypeCode() == BlockTypePayloadBlock && cb.BlockNumber != 1 {
 		errs = multierror.Append(errs, fmt.Errorf(
 			"CanonicalBlock is a PayloadBlock with a block number %d != 1", cb.BlockNumber))
 	}

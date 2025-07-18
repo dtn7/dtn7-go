@@ -29,7 +29,7 @@ func NewBinarySprayBlock(copies uint64) *BinarySprayBlock {
 }
 
 func (bsb *BinarySprayBlock) BlockTypeCode() uint64 {
-	return ExtBlockTypeBinarySprayBlock
+	return BlockTypeBinarySprayBlock
 }
 
 func (bsb *BinarySprayBlock) BlockTypeName() string {

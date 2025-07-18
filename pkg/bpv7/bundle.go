@@ -106,7 +106,7 @@ func (b *Bundle) HasExtensionBlock(blockType uint64) bool {
 // PayloadBlock returns this Bundle's payload block or an error, if it does
 // not exists.
 func (b *Bundle) PayloadBlock() (*CanonicalBlock, error) {
-	return b.ExtensionBlock(ExtBlockTypePayloadBlock)
+	return b.ExtensionBlock(BlockTypePayloadBlock)
 }
 
 // sortBlocks sorts the canonical blocks.
@@ -127,7 +127,7 @@ func (b *Bundle) AddExtensionBlock(block CanonicalBlock) error {
 	}
 
 	var blockNumber uint64 = 1
-	if block.Value.BlockTypeCode() != ExtBlockTypePayloadBlock {
+	if block.Value.BlockTypeCode() != BlockTypePayloadBlock {
 		blockNumber = 2
 	}
 
@@ -206,7 +206,7 @@ func (b Bundle) String() string {
 // IsLifetimeExceeded of this Bundle by checking an optional Bundle Age Block and the PrimaryBlock's Lifetime.
 func (b Bundle) IsLifetimeExceeded() bool {
 	if b.PrimaryBlock.CreationTimestamp.IsZeroTime() {
-		if bab, err := b.ExtensionBlock(ExtBlockTypeBundleAgeBlock); err != nil {
+		if bab, err := b.ExtensionBlock(BlockTypeBundleAgeBlock); err != nil {
 			return true
 		} else {
 			return bab.Value.(*BundleAgeBlock).Age() > b.PrimaryBlock.Lifetime
@@ -266,14 +266,14 @@ func (b Bundle) CheckValid() (errs error) {
 	}
 
 	// Check if the PayloadBlock is the last block.
-	if last := b.CanonicalBlocks[len(b.CanonicalBlocks)-1].Value.BlockTypeCode(); last != ExtBlockTypePayloadBlock {
+	if last := b.CanonicalBlocks[len(b.CanonicalBlocks)-1].Value.BlockTypeCode(); last != BlockTypePayloadBlock {
 		errs = multierror.Append(errs,
 			fmt.Errorf("Bundle: last CannonicalBlock is not a Payload Block, but %d", last))
 	}
 
 	// Check existence of a Bundle Age Block if the CreationTimestamp is zero.
 	if b.PrimaryBlock.CreationTimestamp.IsZeroTime() {
-		if !b.HasExtensionBlock(ExtBlockTypeBundleAgeBlock) {
+		if !b.HasExtensionBlock(BlockTypeBundleAgeBlock) {
 			errs = multierror.Append(errs, fmt.Errorf(
 				"Bundle: Creation Timestamp is zero, but no Bundle Age block exists"))
 		}
