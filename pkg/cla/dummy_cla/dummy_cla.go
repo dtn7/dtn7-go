@@ -98,7 +98,7 @@ func (cla *DummyCLA) GetPeerEndpointID() bpv7.EndpointID {
 	return cla.peerID
 }
 
-func (cla *DummyCLA) Send(bundle bpv7.Bundle) error {
+func (cla *DummyCLA) Send(bundle *bpv7.Bundle) error {
 	var serialiser bytes.Buffer
 	err := bundle.MarshalCbor(&serialiser)
 	if err != nil {

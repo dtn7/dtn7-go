@@ -112,7 +112,7 @@ func (ra *RestAgent) Deliver(bundleDescriptor *store.BundleDescriptor) error {
 	for _, uuid := range uuids {
 		mailbox, exists := ra.mailboxes[uuid]
 		if !exists {
-			mailbox = map[bpv7.BundleID]bpv7.Bundle{bundleDescriptor.ID: bndl}
+			mailbox = map[bpv7.BundleID]bpv7.Bundle{bundleDescriptor.ID: *bndl}
 			ra.mailboxes[uuid] = mailbox
 			log.WithFields(log.Fields{
 				"bundle": bundleDescriptor.ID.String(),
@@ -121,7 +121,7 @@ func (ra *RestAgent) Deliver(bundleDescriptor *store.BundleDescriptor) error {
 		} else {
 			_, exists = mailbox[bundleDescriptor.ID]
 			if !exists {
-				mailbox[bundleDescriptor.ID] = bndl
+				mailbox[bundleDescriptor.ID] = *bndl
 				log.WithFields(log.Fields{
 					"bundle": bundleDescriptor.ID.String(),
 					"uuid":   uuid,
@@ -265,7 +265,7 @@ func (ra *RestAgent) handleBuild(w http.ResponseWriter, r *http.Request) {
 			"uuid":   buildRequest.UUID,
 			"bundle": b.ID().String(),
 		}).Info("REST client sent bundle")
-		GetManagerSingleton().Send(&b)
+		GetManagerSingleton().Send(b)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

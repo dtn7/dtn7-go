@@ -253,7 +253,7 @@ type StatusReport struct {
 // StatusInformationPos, which creates the right bundle status item. The
 // bundle status report reason code will be used and the bundle status item
 // gets the given timestamp.
-func NewStatusReport(bndl Bundle, statusItem StatusInformationPos, reason StatusReportReason, time DtnTime) (report *StatusReport) {
+func NewStatusReport(bndl *Bundle, statusItem StatusInformationPos, reason StatusReportReason, time DtnTime) (report *StatusReport) {
 	report = &StatusReport{
 		StatusInformation: make([]BundleStatusItem, maxStatusInformationPos),
 		ReportReason:      reason,

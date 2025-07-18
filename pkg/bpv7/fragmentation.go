@@ -15,7 +15,7 @@ import (
 )
 
 // Fragment a Bundle into multiple Bundles, with each serialized Bundle limited to mtu bytes.
-func (b Bundle) Fragment(mtu int) (bs []Bundle, err error) {
+func (b *Bundle) Fragment(mtu int) (bs []*Bundle, err error) {
 	if b.PrimaryBlock.BundleControlFlags.Has(MustNotFragmented) {
 		err = fmt.Errorf("bundle control flags forbids bundle fragmentation")
 		return
@@ -96,7 +96,7 @@ func (b Bundle) Fragment(mtu int) (bs []Bundle, err error) {
 	}
 
 	if len(bs) == 1 {
-		bs = []Bundle{b}
+		bs = []*Bundle{b}
 	}
 
 	return
@@ -126,7 +126,7 @@ func fragmentPrimaryBlock(pb PrimaryBlock, fragmentOffset, totalDataLength int) 
 
 // fragmentExtensionBlocksLen calculates the estimated maximum length for the Extension Blocks for the
 // first and the other fragments.
-func fragmentExtensionBlocksLen(b Bundle, mtu int) (first int, others int, err error) {
+func fragmentExtensionBlocksLen(b *Bundle, mtu int) (first int, others int, err error) {
 	buff := new(bytes.Buffer)
 
 	for _, cb := range b.CanonicalBlocks {
@@ -167,7 +167,7 @@ func fragmentExtensionBlocksLen(b Bundle, mtu int) (first int, others int, err e
 }
 
 // prepareReassembly sorts the slice of Bundle fragments and checks if their are any gaps left.
-func prepareReassembly(bs []Bundle) error {
+func prepareReassembly(bs []*Bundle) error {
 	if len(bs) == 0 {
 		return fmt.Errorf("slice of fragments is empty")
 	}
@@ -200,12 +200,12 @@ func prepareReassembly(bs []Bundle) error {
 
 // IsBundleReassemblable checks if a Bundle can be reassembled from the given fragments. This method might sort the
 // given array as a side effect.
-func IsBundleReassemblable(bs []Bundle) bool {
+func IsBundleReassemblable(bs []*Bundle) bool {
 	return prepareReassembly(bs) == nil
 }
 
 // mergeFragmentPayload merges the fragmented payload.
-func mergeFragmentPayload(bs []Bundle) (data []byte, err error) {
+func mergeFragmentPayload(bs []*Bundle) (data []byte, err error) {
 	lastIndex := 0
 	for _, b := range bs {
 		var (
@@ -229,7 +229,8 @@ func mergeFragmentPayload(bs []Bundle) (data []byte, err error) {
 }
 
 // ReassembleFragments merges a slice of Bundle fragments into the reassembled Bundle.
-func ReassembleFragments(bs []Bundle) (b Bundle, err error) {
+func ReassembleFragments(bs []*Bundle) (b *Bundle, err error) {
+	b = &Bundle{}
 	if err = prepareReassembly(bs); err != nil {
 		return
 	}

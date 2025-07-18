@@ -50,7 +50,7 @@ func (s *SignatureBlock) BlockTypeName() string {
 }
 
 // signatureBundleData creates a Buffer of the Primary Block and Payload Block data, used as the message to be signed.
-func signatureBundleData(b Bundle) (pbData bytes.Buffer, err error) {
+func signatureBundleData(b *Bundle) (pbData bytes.Buffer, err error) {
 	if err = cboring.Marshal(&b.PrimaryBlock, &pbData); err != nil {
 		return
 	}
@@ -65,7 +65,7 @@ func signatureBundleData(b Bundle) (pbData bytes.Buffer, err error) {
 }
 
 // NewSignatureBlock for a Bundle from a private key.
-func NewSignatureBlock(b Bundle, priv ed25519.PrivateKey) (s *SignatureBlock, err error) {
+func NewSignatureBlock(b *Bundle, priv ed25519.PrivateKey) (s *SignatureBlock, err error) {
 	if b.PrimaryBlock.BundleControlFlags.Has(IsFragment) {
 		err = fmt.Errorf("fragmented Bundles cannot be signed")
 		return
@@ -121,7 +121,7 @@ func (s *SignatureBlock) CheckContextValid(b *Bundle) error {
 		return nil
 	}
 
-	if !s.Verify(*b) {
+	if !s.Verify(b) {
 		return fmt.Errorf("block verification failed")
 	}
 
@@ -129,7 +129,7 @@ func (s *SignatureBlock) CheckContextValid(b *Bundle) error {
 }
 
 // Verify the signature against a Bundle.
-func (s *SignatureBlock) Verify(b Bundle) (valid bool) {
+func (s *SignatureBlock) Verify(b *Bundle) (valid bool) {
 	if validErr := s.CheckValid(); validErr != nil {
 		return false
 	}

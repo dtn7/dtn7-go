@@ -1,5 +1,5 @@
 // SPDX-FileCopyrightText: 2018, 2019, 2020, 2022 Alvar Penning
-// SPDX-FileCopyrightText: 2022 Markus Sommer
+// SPDX-FileCopyrightText: 2022, 2025 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -26,7 +26,7 @@ type Bundle struct {
 
 // NewBundle creates a new Bundle. The values and flags of the blocks will be
 // checked and an error might be returned.
-func NewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) (b Bundle, err error) {
+func NewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) (b *Bundle, err error) {
 	b = MustNewBundle(primary, canonicals)
 	err = b.CheckValid()
 
@@ -35,19 +35,20 @@ func NewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) (b Bundle, err
 
 // MustNewBundle creates a new Bundle like NewBundle, but skips the validity
 // check. No panic will be called!
-func MustNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) (b Bundle) {
-	b = Bundle{
+func MustNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) *Bundle {
+	b := Bundle{
 		PrimaryBlock:    primary,
 		CanonicalBlocks: canonicals,
 	}
 	b.sortBlocks()
 
-	return
+	return &b
 }
 
 // ParseBundle reads a new CBOR encoded Bundle from a Reader.
-func ParseBundle(r io.Reader) (b Bundle, err error) {
-	err = cboring.Unmarshal(&b, r)
+func ParseBundle(r io.Reader) (b *Bundle, err error) {
+	b = &Bundle{}
+	err = cboring.Unmarshal(b, r)
 	return
 }
 
@@ -188,7 +189,7 @@ func (b *Bundle) SetCRCType(crcType CRCType) {
 }
 
 // ID returns a BundleID representing this Bundle.
-func (b Bundle) ID() BundleID {
+func (b *Bundle) ID() BundleID {
 	return BundleID{
 		SourceNode: b.PrimaryBlock.SourceNode,
 		Timestamp:  b.PrimaryBlock.CreationTimestamp,
@@ -199,12 +200,12 @@ func (b Bundle) ID() BundleID {
 	}
 }
 
-func (b Bundle) String() string {
+func (b *Bundle) String() string {
 	return b.ID().String()
 }
 
 // IsLifetimeExceeded of this Bundle by checking an optional Bundle Age Block and the PrimaryBlock's Lifetime.
-func (b Bundle) IsLifetimeExceeded() bool {
+func (b *Bundle) IsLifetimeExceeded() bool {
 	if b.PrimaryBlock.CreationTimestamp.IsZeroTime() {
 		if bab, err := b.ExtensionBlock(BlockTypeBundleAgeBlock); err != nil {
 			return true
@@ -219,7 +220,7 @@ func (b Bundle) IsLifetimeExceeded() bool {
 }
 
 // CheckValid returns an array of errors for incorrect data.
-func (b Bundle) CheckValid() (errs error) {
+func (b *Bundle) CheckValid() (errs error) {
 	// Check blocks for errors
 	b.forEachBlock(func(blck block) {
 		if blckErr := blck.CheckValid(); blckErr != nil {
@@ -260,7 +261,7 @@ func (b Bundle) CheckValid() (errs error) {
 		cbBlockNumbers[cb.BlockNumber] = true
 
 		// Context aware block self-check
-		if blckErr := cb.Value.CheckContextValid(&b); blckErr != nil {
+		if blckErr := cb.Value.CheckContextValid(b); blckErr != nil {
 			errs = multierror.Append(errs, blckErr)
 		}
 	}
@@ -289,14 +290,14 @@ func (b Bundle) CheckValid() (errs error) {
 
 // IsAdministrativeRecord returns if this Bundle's control flags indicate this
 // has an administrative record payload.
-func (b Bundle) IsAdministrativeRecord() bool {
+func (b *Bundle) IsAdministrativeRecord() bool {
 	return b.PrimaryBlock.BundleControlFlags.Has(AdministrativeRecordPayload)
 }
 
 // AdministrativeRecord stored within this Bundle.
 //
 // An error arises if this Bundle is not an AdministrativeRecord, compare IsAdministrativeRecord.
-func (b Bundle) AdministrativeRecord() (AdministrativeRecord, error) {
+func (b *Bundle) AdministrativeRecord() (AdministrativeRecord, error) {
 	if !b.IsAdministrativeRecord() {
 		return nil, fmt.Errorf("bundle is not an administrative record")
 	}
@@ -358,7 +359,7 @@ func (b *Bundle) UnmarshalCbor(r io.Reader) error {
 }
 
 // MarshalJSON creates a JSON object for this Bundle.
-func (b Bundle) MarshalJSON() ([]byte, error) {
+func (b *Bundle) MarshalJSON() ([]byte, error) {
 	canonicals := make([]json.Marshaler, len(b.CanonicalBlocks))
 	for i := range b.CanonicalBlocks {
 		canonicals[i] = b.CanonicalBlocks[i]

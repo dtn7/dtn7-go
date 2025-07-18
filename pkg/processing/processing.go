@@ -107,7 +107,7 @@ func bundleContraindicated(bundleDescriptor *store.BundleDescriptor) {
 	}
 }
 
-func forwardBundleToPeer(mutex *sync.Mutex, bundleDescriptor *store.BundleDescriptor, bundle bpv7.Bundle, peer cla.ConvergenceSender, wg *sync.WaitGroup) {
+func forwardBundleToPeer(mutex *sync.Mutex, bundleDescriptor *store.BundleDescriptor, bundle *bpv7.Bundle, peer cla.ConvergenceSender, wg *sync.WaitGroup) {
 	log.WithFields(log.Fields{
 		"bundle": bundle.ID(),
 		"cla":    peer,

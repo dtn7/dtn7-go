@@ -21,7 +21,7 @@ func TestBundleBuilderSimple(t *testing.T) {
 	}
 	bndlCbor := buff.Bytes()
 
-	bndl2 := Bundle{}
+	bndl2 := &Bundle{}
 	if err := bndl2.UnmarshalCbor(buff); err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestBuildFromMap(t *testing.T) {
 	tests := []struct {
 		name     string
 		args     map[string]interface{}
-		wantBndl Bundle
+		wantBndl *Bundle
 		wantErr  bool
 	}{
 		{
@@ -216,7 +216,7 @@ func TestBuildFromMap(t *testing.T) {
 			args: map[string]interface{}{
 				"nope": "nope",
 			},
-			wantBndl: Bundle{},
+			wantBndl: &Bundle{},
 			wantErr:  true,
 		},
 		{
@@ -227,7 +227,7 @@ func TestBuildFromMap(t *testing.T) {
 				"lifetime":                 "24h",
 				"payload_block":            []byte("hello world"),
 			},
-			wantBndl: Bundle{},
+			wantBndl: &Bundle{},
 			wantErr:  true,
 		},
 	}
@@ -239,7 +239,7 @@ func TestBuildFromMap(t *testing.T) {
 				t.Fatalf("BuildFromMap() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(gotBndl, tt.wantBndl) {
+			if !reflect.DeepEqual(*gotBndl, *tt.wantBndl) {
 				t.Fatalf("BuildFromMap() gotBndl = %v, want %v", gotBndl, tt.wantBndl)
 			}
 		})

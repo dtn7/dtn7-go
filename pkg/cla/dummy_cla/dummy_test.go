@@ -29,7 +29,7 @@ func TestSendReceive(t *testing.T) {
 		_ = peerB.Activate()
 		peers := []*DummyCLA{peerA, peerB}
 
-		bundles := make([]bpv7.Bundle, numberOfBundles)
+		bundles := make([]*bpv7.Bundle, numberOfBundles)
 		for i := 0; i < numberOfBundles; i++ {
 			bundles[i] = bpv7.GenerateRandomizedBundle(t, i)
 		}

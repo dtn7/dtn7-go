@@ -42,8 +42,8 @@ func TestIdKeeper(t *testing.T) {
 
 	keeper := GetIdKeeperSingleton()
 
-	keeper.Update(&bndl0)
-	keeper.Update(&bndl1)
+	keeper.Update(bndl0)
+	keeper.Update(bndl1)
 
 	if seq := bndl0.PrimaryBlock.CreationTimestamp.SequenceNumber(); seq != 0 {
 		t.Errorf("First bundle's sequence number is %d", seq)

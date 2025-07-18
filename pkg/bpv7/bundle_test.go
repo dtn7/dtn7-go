@@ -48,7 +48,7 @@ func TestBundleApplyCRC(t *testing.T) {
 		}
 
 		buff := new(bytes.Buffer)
-		if err := cboring.Marshal(&bndle, buff); err != nil {
+		if err := cboring.Marshal(bndle, buff); err != nil {
 			t.Fatal(err)
 		}
 
@@ -83,18 +83,18 @@ func TestBundleCbor(t *testing.T) {
 	bundle1.SetCRCType(CRC32)
 
 	buff := new(bytes.Buffer)
-	if err := cboring.Marshal(&bundle1, buff); err != nil {
+	if err := cboring.Marshal(bundle1, buff); err != nil {
 		t.Fatal(err)
 	}
 	bundle1Cbor := buff.Bytes()
 
-	bundle2 := Bundle{}
-	if err := cboring.Unmarshal(&bundle2, buff); err != nil {
+	bundle2 := &Bundle{}
+	if err := cboring.Unmarshal(bundle2, buff); err != nil {
 		t.Fatal(err)
 	}
 
 	buff.Reset()
-	if err := cboring.Marshal(&bundle2, buff); err != nil {
+	if err := cboring.Marshal(bundle2, buff); err != nil {
 		t.Fatal(err)
 	}
 	bundle2Cbor := buff.Bytes()
@@ -104,7 +104,7 @@ func TestBundleCbor(t *testing.T) {
 			bundle1Cbor, bundle2Cbor)
 	}
 
-	if !reflect.DeepEqual(bundle1, bundle2) {
+	if !reflect.DeepEqual(*bundle1, *bundle2) {
 		t.Fatalf("Bundles do not match:\n%v\n%v", bundle1, bundle2)
 	}
 }
@@ -144,7 +144,7 @@ func TestBundleExtensionBlock(t *testing.T) {
 // createNewBundle is used in the TestBundleCheckValid function and returns
 // the Bundle with an ignored error. The error will be checked in this
 // test case.
-func createNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) Bundle {
+func createNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) *Bundle {
 	b, _ := NewBundle(primary, canonicals)
 
 	return b
@@ -152,7 +152,7 @@ func createNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) Bundle {
 
 func TestBundleCheckValid(t *testing.T) {
 	tests := []struct {
-		b     Bundle
+		b     *Bundle
 		valid bool
 	}{
 		// Administrative record
@@ -278,7 +278,7 @@ func BenchmarkBundleSerializationCboring(b *testing.B) {
 
 			b.Run(fmt.Sprintf("%d-%v", size, crc), func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					if err := cboring.Marshal(&bndl, new(bytes.Buffer)); err != nil {
+					if err := cboring.Marshal(bndl, new(bytes.Buffer)); err != nil {
 						b.Fatal(err)
 					}
 				}
@@ -315,7 +315,7 @@ func BenchmarkBundleDeserializationCboring(b *testing.B) {
 			bndl.SetCRCType(crc)
 
 			buff := new(bytes.Buffer)
-			if err := cboring.Marshal(&bndl, buff); err != nil {
+			if err := cboring.Marshal(bndl, buff); err != nil {
 				b.Fatal(err)
 			}
 			data := buff.Bytes()

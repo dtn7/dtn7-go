@@ -62,11 +62,11 @@ func TestSingle(t *testing.T) {
 
 	bndl := bpv7.GenerateSampleBundle(t)
 	port := 35037
-	recvChan := make(chan bpv7.Bundle)
+	recvChan := make(chan *bpv7.Bundle)
 
 	receiveFunc := func(bundle *bpv7.Bundle) {
 		log.WithField("bundle", bundle).Debug("Received bundle")
-		recvChan <- *bundle
+		recvChan <- bundle
 	}
 
 	// Server
@@ -87,7 +87,7 @@ func TestSingle(t *testing.T) {
 
 	select {
 	case bndlRecv := <-recvChan:
-		if !reflect.DeepEqual(bndl, bndlRecv) {
+		if !reflect.DeepEqual(*bndl, *bndlRecv) {
 			t.Fatalf("Bundle changed during transmission: %v, %v", bndl, bndlRecv)
 		}
 	case <-time.After(timeout):

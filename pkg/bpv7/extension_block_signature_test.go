@@ -169,7 +169,7 @@ func TestSignatureBlockIntegration(t *testing.T) {
 	b1.SetCRCType(CRC32)
 
 	var buff bytes.Buffer
-	var b2 Bundle
+	b2 := &Bundle{}
 	if buffErr := b1.MarshalCbor(&buff); buffErr != nil {
 		t.Fatal(buffErr)
 	} else if buffErr := b2.UnmarshalCbor(&buff); buffErr != nil {
@@ -276,10 +276,10 @@ func TestSignatureBlockFragmentSimple(t *testing.T) {
 	}
 
 	// Marshal both Bundles to ensure the presence of a CRC value
-	if err := cboring.Marshal(&b1, &bytes.Buffer{}); err != nil {
+	if err := cboring.Marshal(b1, &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
-	if err := cboring.Marshal(&b2, &bytes.Buffer{}); err != nil {
+	if err := cboring.Marshal(b2, &bytes.Buffer{}); err != nil {
 		t.Fatal(err)
 	}
 

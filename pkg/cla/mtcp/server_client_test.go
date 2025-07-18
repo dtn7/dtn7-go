@@ -61,7 +61,7 @@ func TestSendReceive(t *testing.T) {
 		var wgReceive sync.WaitGroup
 		wgReceive.Add(numberOfBundles)
 
-		bundles := make([]bpv7.Bundle, numberOfBundles)
+		bundles := make([]*bpv7.Bundle, numberOfBundles)
 		for i := 0; i < numberOfBundles; i++ {
 			bundles[i] = bpv7.GenerateRandomizedBundle(t, i)
 		}

@@ -51,7 +51,6 @@ type Convergence interface {
 
 	// Address should return a unique address string to both identify this
 	// Convergence{Receiver,Sender} and ensure it will not be opened twice.
-
 	// TODO: The way this works right now does have some problems.
 	// If you're using host:port to identify a CLA you might end up with multiple connections
 	// between two nodes. If both are sending neighbour-discovery announcements, they will include
@@ -79,7 +78,7 @@ type ConvergenceSender interface {
 	Convergence
 
 	// Send a bundle to this ConvergenceSender's endpoint. This method should be thread safe.
-	Send(bpv7.Bundle) error
+	Send(*bpv7.Bundle) error
 
 	// GetPeerEndpointID returns the endpoint ID assigned to this CLA's peer,
 	// if it's known. Otherwise, the zero endpoint will be returned.

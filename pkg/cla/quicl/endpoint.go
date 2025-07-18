@@ -167,7 +167,7 @@ func (endpoint *Endpoint) GetPeerEndpointID() bpv7.EndpointID {
 	return endpoint.peerId
 }
 
-func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
+func (endpoint *Endpoint) Send(bndl *bpv7.Bundle) error {
 	log.WithFields(log.Fields{
 		"peer":   endpoint.peerId,
 		"bundle": bndl.ID(),
@@ -179,7 +179,7 @@ func (endpoint *Endpoint) Send(bndl bpv7.Bundle) error {
 	}
 
 	buff := new(bytes.Buffer)
-	if err := cboring.Marshal(&bndl, buff); err != nil {
+	if err := cboring.Marshal(bndl, buff); err != nil {
 		log.WithFields(log.Fields{
 			"peer":   endpoint.peerId,
 			"bundle": bndl.ID(),

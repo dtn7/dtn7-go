@@ -58,7 +58,8 @@ func (bldr *BundleBuilder) CRC(crcType CRCType) *BundleBuilder {
 }
 
 // Build creates a new Bundle and returns an optional error.
-func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
+func (bldr *BundleBuilder) Build() (bndl *Bundle, err error) {
+	bndl = &Bundle{}
 	if bldr.err != nil {
 		err = bldr.err
 		return
@@ -84,7 +85,7 @@ func (bldr *BundleBuilder) Build() (bndl Bundle, err error) {
 }
 
 // mustBuild is like Build, but panics on an error. This method is only intended for internal testing.
-func (bldr *BundleBuilder) mustBuild() Bundle {
+func (bldr *BundleBuilder) mustBuild() *Bundle {
 	if b, err := bldr.Build(); err != nil {
 		panic(err)
 	} else {
@@ -462,7 +463,7 @@ func (bldr *BundleBuilder) StatusReport(args ...interface{}) *BundleBuilder {
 		return bldr
 	}
 
-	bundle, ok := args[0].(Bundle)
+	bundle, ok := args[0].(*Bundle)
 	if !ok {
 		bldr.err = fmt.Errorf("StatusReport's first argument is not a Bundle")
 		return bldr
@@ -503,7 +504,8 @@ func (bldr *BundleBuilder) StatusReport(args ...interface{}) *BundleBuilder {
 //	  "payload_block":          "hello world",
 //	}
 //	b, err := BuildFromMap(args)
-func BuildFromMap(m map[string]interface{}) (bndl Bundle, err error) {
+func BuildFromMap(m map[string]interface{}) (bndl *Bundle, err error) {
+	bndl = &Bundle{}
 	bldr := Builder()
 
 	for method, args := range m {

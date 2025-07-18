@@ -119,7 +119,7 @@ func (bst *BundleStore) loadEntireBundle(filename string) (*bpv7.Bundle, error) 
 
 	bundle, err := bpv7.ParseBundle(f)
 
-	return &bundle, nil
+	return bundle, nil
 }
 
 func (bst *BundleStore) insertNewBundle(bundle *bpv7.Bundle) (*BundleDescriptor, error) {

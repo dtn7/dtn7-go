@@ -34,16 +34,16 @@ type BundleDescriptor struct {
 	SerialisedFileName string
 }
 
-func (bd *BundleDescriptor) Load() (bpv7.Bundle, error) {
+func (bd *BundleDescriptor) Load() (*bpv7.Bundle, error) {
 	if bd.Bundle != nil {
-		return *bd.Bundle, nil
+		return bd.Bundle, nil
 	}
 	bndle, err := GetStoreSingleton().loadEntireBundle(bd.SerialisedFileName)
 	if err != nil {
-		return bpv7.Bundle{}, err
+		return nil, err
 	}
 	bd.Bundle = bndle
-	return *bndle, nil
+	return bndle, nil
 }
 
 func (bd *BundleDescriptor) GetAlreadySent() []bpv7.EndpointID {
