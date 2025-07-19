@@ -38,8 +38,8 @@ type ExtensionBlock interface {
 	BlockTypeName() string
 }
 
-// ExtensionBlockManager keeps a book on various types of ExtensionBlocks that
-// can be changed at runtime. Thus, new ExtensionBlocks can be created based on
+// ExtensionBlockManager keeps a book on various types of ExtensionBlocksByType that
+// can be changed at runtime. Thus, new ExtensionBlocksByType can be created based on
 // their block type code.
 //
 // A singleton ExtensionBlockManager can be fetched by GetExtensionBlockManager.
@@ -122,7 +122,7 @@ func (ebm *ExtensionBlockManager) WriteBlock(b ExtensionBlock, w io.Writer) erro
 		return cboring.WriteByteString(buff.Bytes(), w)
 
 	default:
-		return fmt.Errorf("ExtensionBlock does not implement any expected types")
+		return fmt.Errorf("ExtensionBlockByType does not implement any expected types")
 	}
 }
 
@@ -148,7 +148,7 @@ func (ebm *ExtensionBlockManager) ReadBlock(typeCode uint64, r io.Reader) (b Ext
 		}
 
 	default:
-		err = fmt.Errorf("ExtensionBlock does not implement any expected types")
+		err = fmt.Errorf("ExtensionBlockByType does not implement any expected types")
 	}
 
 	return

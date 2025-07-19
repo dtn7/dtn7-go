@@ -4,7 +4,7 @@
 
 package bpv7
 
-// GenericExtensionBlock is a dummy ExtensionBlock to cover for unknown or unregistered ExtensionBlocks.
+// GenericExtensionBlock is a dummy ExtensionBlock to cover for unknown or unregistered ExtensionBlocksByType.
 type GenericExtensionBlock struct {
 	data     []byte
 	typeCode uint64

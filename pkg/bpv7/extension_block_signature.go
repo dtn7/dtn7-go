@@ -55,11 +55,7 @@ func signatureBundleData(b *Bundle) (pbData bytes.Buffer, err error) {
 		return
 	}
 
-	if pb, pbErr := b.ExtensionBlock(BlockTypePayloadBlock); pbErr != nil {
-		err = pbErr
-	} else {
-		err = cboring.Marshal(pb, &pbData)
-	}
+	err = cboring.Marshal(&b.PayloadBlock, &pbData)
 
 	return
 }

@@ -65,7 +65,7 @@ func (pnb *PreviousNodeBlock) CheckValid() error {
 
 // CheckContextValid that there is at most one Previous Node Block.
 func (pnb *PreviousNodeBlock) CheckContextValid(b *Bundle) error {
-	cb, err := b.ExtensionBlock(BlockTypePreviousNodeBlock)
+	cb, err := b.ExtensionBlockByType(BlockTypePreviousNodeBlock)
 
 	if err != nil {
 		return err

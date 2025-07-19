@@ -11,7 +11,7 @@ type PayloadBlock []byte
 
 // BlockTypeCode must return a constant integer, indicating the block type code.
 func (pb *PayloadBlock) BlockTypeCode() uint64 {
-	return ExtBlockTypePayloadBlock
+	return BlockTypePayloadBlock
 }
 
 // BlockTypeName must return a constant string, this block's name.

@@ -65,11 +65,8 @@ func testBundleFragment(t *testing.T, payloadLen, mtu int) {
 			t.Fatalf("Expected offset %d instead of %d", expectedOffset, offset)
 		}
 
-		if payloadBlock, err := frag.PayloadBlock(); err != nil {
-			t.Fatal(err)
-		} else {
-			expectedOffset += uint64(len(payloadBlock.Value.(*PayloadBlock).Data()))
-		}
+		expectedOffset += uint64(len(frag.PayloadBlock.Value.(*PayloadBlock).Data()))
+
 	}
 	if int(expectedOffset) != payloadLen {
 		t.Fatalf("Final offset of %d does not equals payload length", expectedOffset)

@@ -39,8 +39,8 @@ func TestBundleBuilderSimple(t *testing.T) {
 			1000*60*10),
 		[]CanonicalBlock{
 			NewCanonicalBlock(2, ReplicateBlock, NewHopCountBlock(64)),
-			NewCanonicalBlock(3, ReplicateBlock, NewBundleAgeBlock(0)),
-			NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world!")))})
+			NewCanonicalBlock(3, ReplicateBlock, NewBundleAgeBlock(0))},
+		NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world!"))))
 	if err != nil {
 		t.Fatal(err)
 	}

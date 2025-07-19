@@ -15,6 +15,7 @@ import (
 )
 
 // Fragment a Bundle into multiple Bundles, with each serialized Bundle limited to mtu bytes.
+// TODO: rewrite this to better account for a separate PayloadBlock
 func (b *Bundle) Fragment(mtu int) (bs []*Bundle, err error) {
 	if b.PrimaryBlock.BundleControlFlags.Has(MustNotFragmented) {
 		err = fmt.Errorf("bundle control flags forbids bundle fragmentation")
@@ -30,10 +31,8 @@ func (b *Bundle) Fragment(mtu int) (bs []*Bundle, err error) {
 		payloadBlockLen int
 	)
 
-	if payloadBlock, err = b.PayloadBlock(); err != nil {
-		return
-	}
-	payloadBlockLen = len(payloadBlock.Value.(*PayloadBlock).Data())
+	payloadBlock = &b.PayloadBlock
+	payloadBlockLen = len(b.PayloadBlock.Value.(*PayloadBlock).Data())
 
 	if extFirstOverhead, extOtherOverhead, err = fragmentExtensionBlocksLen(b, mtu); err != nil {
 		return
@@ -61,12 +60,9 @@ func (b *Bundle) Fragment(mtu int) (bs []*Bundle, err error) {
 			return
 		}
 
-		fragBundle := MustNewBundle(fragPrimaryBlock, nil)
+		fragBundle := MustNewBundle(fragPrimaryBlock, nil, CanonicalBlock{})
 
-		for _, cb := range b.CanonicalBlocks {
-			if cb.TypeCode() == BlockTypePayloadBlock {
-				continue
-			}
+		for _, cb := range b.ExtensionBlocks {
 			if i > 0 && !cb.BlockControlFlags.Has(ReplicateBlock) {
 				continue
 			}
@@ -79,13 +75,11 @@ func (b *Bundle) Fragment(mtu int) (bs []*Bundle, err error) {
 		fragPayloadBlockLen := mtu - overhead
 
 		offset := int(math.Min(float64(i+fragPayloadBlockLen), float64(len(payloadBlock.Value.(*PayloadBlock).Data()))))
-		if err = fragBundle.AddExtensionBlock(CanonicalBlock{
+		fragBundle.PayloadBlock = CanonicalBlock{
+			BlockNumber:       1,
 			BlockControlFlags: payloadBlock.BlockControlFlags,
 			CRCType:           payloadBlock.CRCType,
-			Value:             NewPayloadBlock(payloadBlock.Value.(*PayloadBlock).Data()[i:offset]),
-		}); err != nil {
-			return
-		}
+			Value:             NewPayloadBlock(payloadBlock.Value.(*PayloadBlock).Data()[i:offset])}
 
 		if err = fragBundle.CheckValid(); err != nil {
 			return
@@ -129,28 +123,28 @@ func fragmentPrimaryBlock(pb PrimaryBlock, fragmentOffset, totalDataLength int) 
 func fragmentExtensionBlocksLen(b *Bundle, mtu int) (first int, others int, err error) {
 	buff := new(bytes.Buffer)
 
-	for _, cb := range b.CanonicalBlocks {
-		if cb.TypeCode() == BlockTypePayloadBlock {
-			cb = CanonicalBlock{
-				BlockNumber:       cb.BlockNumber,
-				BlockControlFlags: cb.BlockControlFlags,
+	for _, eb := range b.ExtensionBlocks {
+		if eb.TypeCode() == BlockTypePayloadBlock {
+			eb = CanonicalBlock{
+				BlockNumber:       eb.BlockNumber,
+				BlockControlFlags: eb.BlockControlFlags,
 				Value:             NewPayloadBlock(nil),
 			}
 		}
 
-		cb.CRCType = CRC32
+		eb.CRCType = CRC32
 
-		if err = cb.MarshalCbor(buff); err != nil {
+		if err = eb.MarshalCbor(buff); err != nil {
 			return
 		}
 
 		cbLen := buff.Len()
 		first += cbLen
-		if cb.BlockControlFlags.Has(ReplicateBlock) {
+		if eb.BlockControlFlags.Has(ReplicateBlock) {
 			others += cbLen
 		}
 
-		if cb.TypeCode() == BlockTypePayloadBlock {
+		if eb.TypeCode() == BlockTypePayloadBlock {
 			// Update the byte string length field
 			buff.Reset()
 			if err = cboring.WriteByteStringLen(uint64(mtu), buff); err != nil {
@@ -162,6 +156,28 @@ func fragmentExtensionBlocksLen(b *Bundle, mtu int) (first int, others int, err 
 
 		buff.Reset()
 	}
+
+	eb := CanonicalBlock{
+		BlockNumber:       1,
+		BlockControlFlags: b.PayloadBlock.BlockControlFlags,
+		Value:             NewPayloadBlock(nil),
+	}
+
+	eb.CRCType = CRC32
+
+	if err = eb.MarshalCbor(buff); err != nil {
+		return
+	}
+
+	cbLen := buff.Len()
+	first += cbLen
+
+	buff.Reset()
+	if err = cboring.WriteByteStringLen(uint64(mtu), buff); err != nil {
+		return
+	}
+	first += buff.Len() - 1
+	others += cbLen + buff.Len() - 1
 
 	return
 }
@@ -184,10 +200,8 @@ func prepareReassembly(bs []*Bundle) error {
 
 		if fragOff := b.PrimaryBlock.FragmentOffset; fragOff > lastIndex {
 			return fmt.Errorf("next fragment starts at offset %d, gap from %d to %d", fragOff, lastIndex, fragOff)
-		} else if payloadBlock, err := b.PayloadBlock(); err != nil {
-			return err
 		} else {
-			lastIndex = fragOff + uint64(len(payloadBlock.Value.(*PayloadBlock).Data()))
+			lastIndex = fragOff + uint64(len(b.PayloadBlock.Value.(*PayloadBlock).Data()))
 		}
 	}
 
@@ -209,17 +223,12 @@ func mergeFragmentPayload(bs []*Bundle) (data []byte, err error) {
 	lastIndex := 0
 	for _, b := range bs {
 		var (
-			fragStartIndex   int
-			fragPayloadBlock *CanonicalBlock
-			fragPayloadData  []byte
+			fragStartIndex  int
+			fragPayloadData []byte
 		)
 
 		fragStartIndex = int(b.PrimaryBlock.FragmentOffset)
-
-		if fragPayloadBlock, err = b.PayloadBlock(); err != nil {
-			return
-		}
-		fragPayloadData = fragPayloadBlock.Value.(*PayloadBlock).Data()
+		fragPayloadData = b.PayloadBlock.Value.(*PayloadBlock).Data()
 
 		data = append(data, fragPayloadData[lastIndex-fragStartIndex:]...)
 		lastIndex = fragStartIndex + len(fragPayloadData)
@@ -241,11 +250,7 @@ func ReassembleFragments(bs []*Bundle) (b *Bundle, err error) {
 	b.PrimaryBlock.TotalDataLength = 0
 	b.PrimaryBlock.CRC = nil
 
-	for _, cb := range bs[0].CanonicalBlocks {
-		if cb.TypeCode() == BlockTypePayloadBlock {
-			continue
-		}
-
+	for _, cb := range bs[0].ExtensionBlocks {
 		if err = b.AddExtensionBlock(cb); err != nil {
 			return
 		}
@@ -255,18 +260,12 @@ func ReassembleFragments(bs []*Bundle) (b *Bundle, err error) {
 		err = payloadErr
 		return
 	} else {
-		pb0, pb0Err := bs[0].PayloadBlock()
-		if pb0Err != nil {
-			err = pb0Err
-			return
-		}
+		pb0 := bs[0].PayloadBlock
 
 		cb := NewCanonicalBlock(1, pb0.BlockControlFlags, NewPayloadBlock(payload))
 		cb.SetCRCType(pb0.CRCType)
 
-		if err = b.AddExtensionBlock(cb); err != nil {
-			return
-		}
+		b.PayloadBlock = cb
 	}
 
 	err = b.CheckValid()

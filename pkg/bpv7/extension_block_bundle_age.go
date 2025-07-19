@@ -70,7 +70,7 @@ func (bab *BundleAgeBlock) CheckValid() error {
 
 // CheckContextValid that there is at most one Bundle Age Block.
 func (bab *BundleAgeBlock) CheckContextValid(b *Bundle) error {
-	cb, err := b.ExtensionBlock(BlockTypeBundleAgeBlock)
+	cb, err := b.ExtensionBlockByType(BlockTypeBundleAgeBlock)
 
 	if err != nil {
 		return err

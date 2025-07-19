@@ -59,7 +59,7 @@ func forwardingAsync(bundleDescriptor *store.BundleDescriptor) {
 		return
 	}
 	// Step 4.1: remove previous node block
-	if prevNodeBlock, err := bundle.ExtensionBlock(bpv7.BlockTypePreviousNodeBlock); err == nil {
+	if prevNodeBlock, err := bundle.ExtensionBlockByType(bpv7.BlockTypePreviousNodeBlock); err == nil {
 		bundle.RemoveExtensionBlockByBlockNumber(prevNodeBlock.BlockNumber)
 	}
 	// Step 4.2: add new previous node block

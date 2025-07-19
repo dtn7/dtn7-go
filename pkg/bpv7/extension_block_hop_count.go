@@ -109,7 +109,7 @@ func (hcb *HopCountBlock) CheckValid() error {
 
 // CheckContextValid that there is at most one Hop Count Block.
 func (hcb *HopCountBlock) CheckContextValid(b *Bundle) error {
-	cb, err := b.ExtensionBlock(BlockTypeHopCountBlock)
+	cb, err := b.ExtensionBlockByType(BlockTypeHopCountBlock)
 
 	if err != nil {
 		return err

@@ -141,7 +141,7 @@ func (bst *BundleStore) insertNewBundle(bundle *bpv7.Bundle) (*BundleDescriptor,
 		Bundle:               nil,
 	}
 
-	if previousNodeBlock, err := bundle.ExtensionBlock(bpv7.BlockTypePreviousNodeBlock); err == nil {
+	if previousNodeBlock, err := bundle.ExtensionBlockByType(bpv7.BlockTypePreviousNodeBlock); err == nil {
 		previousNode := previousNodeBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint()
 		bd.AlreadySentTo = append(bd.AlreadySentTo, previousNode)
 		log.WithFields(log.Fields{
@@ -198,7 +198,7 @@ func (bst *BundleStore) InsertBundle(bundle *bpv7.Bundle) (*BundleDescriptor, er
 	log.WithField("bundle", bundle.ID().String()).Debug("Bundle already exists, updating metadata")
 
 	var uerr error
-	if previousNodeBlock, err := bundle.ExtensionBlock(bpv7.BlockTypePreviousNodeBlock); err == nil {
+	if previousNodeBlock, err := bundle.ExtensionBlockByType(bpv7.BlockTypePreviousNodeBlock); err == nil {
 		previousNode := previousNodeBlock.Value.(*bpv7.PreviousNodeBlock).Endpoint()
 		bd.AlreadySentTo = append(bd.AlreadySentTo, previousNode)
 		uerr = bst.updateBundleMetadata(&bd)

@@ -28,6 +28,7 @@ type BundleBuilder struct {
 	primary          PrimaryBlock
 	canonicals       []CanonicalBlock
 	canonicalCounter uint64
+	payload          CanonicalBlock
 	crcType          CRCType
 }
 
@@ -76,7 +77,7 @@ func (bldr *BundleBuilder) Build() (bndl *Bundle, err error) {
 		return
 	}
 
-	bndl, err = NewBundle(bldr.primary, bldr.canonicals)
+	bndl, err = NewBundle(bldr.primary, bldr.canonicals, bldr.payload)
 	if err == nil {
 		bndl.SetCRCType(bldr.crcType)
 	}
@@ -96,7 +97,7 @@ func (bldr *BundleBuilder) mustBuild() *Bundle {
 // Helper functions
 
 // bldrParseEndpoint returns an EndpointID for a given EndpointID or a string,
-// representing an endpoint identifier as an URI.
+// representing an endpoint identifier as a URI.
 func bldrParseEndpoint(eid interface{}) (e EndpointID, err error) {
 	switch eid := eid.(type) {
 	case EndpointID:
@@ -109,7 +110,7 @@ func bldrParseEndpoint(eid interface{}) (e EndpointID, err error) {
 	return
 }
 
-// bldrParseLifetime returns a millisecond as an uint for a given millisecond or a duration string, which will be parsed.
+// bldrParseLifetime returns milliseconds as a uint for given milliseconds or a duration string.
 func bldrParseLifetime(duration interface{}) (ms uint64, err error) {
 	switch duration := duration.(type) {
 	case uint64:
@@ -252,10 +253,10 @@ func (bldr *BundleBuilder) BundleCtrlFlags(bcf BundleControlFlags) *BundleBuilde
 
 // Canonical adds a canonical block to this bundle. The parameters are:
 //
-//	ExtensionBlock[, BlockControlFlags] or
+//	ExtensionBlockByType[, BlockControlFlags] or
 //	CanonicalBlock
 //
-//	where ExtensionBlock is a bpv7.ExtensionBlock and
+//	where ExtensionBlockByType is a bpv7.ExtensionBlockByType and
 //	BlockControlFlags are _optional_ block processing control flags or
 //	CanonicalBlock is a CanonicalBlock
 func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
@@ -264,7 +265,7 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 	}
 
 	if len(args) == 0 {
-		bldr.err = fmt.Errorf("Canonical was called with no parameters")
+		bldr.err = fmt.Errorf("canonical was called with no parameters")
 		return bldr
 	}
 
@@ -297,29 +298,28 @@ func (bldr *BundleBuilder) Canonical(args ...interface{}) *BundleBuilder {
 		}
 
 		if data.BlockTypeCode() == BlockTypePayloadBlock {
-			blockNumber = 1
+			bldr.payload = NewCanonicalBlock(1, blockCtrlFlags, data)
 		} else {
 			blockNumber = bldr.canonicalCounter
 			bldr.canonicalCounter++
+			bldr.canonicals = append(bldr.canonicals,
+				NewCanonicalBlock(blockNumber, blockCtrlFlags, data))
 		}
-
-		bldr.canonicals = append(bldr.canonicals,
-			NewCanonicalBlock(blockNumber, blockCtrlFlags, data))
 
 	case CanonicalBlock:
 		cb := args[0].(CanonicalBlock)
 		if cb.TypeCode() == BlockTypePayloadBlock {
-			blockNumber = 1
+			cb.BlockNumber = 1
+			bldr.payload = cb
 		} else {
 			blockNumber = bldr.canonicalCounter
 			bldr.canonicalCounter++
+			cb.BlockNumber = blockNumber
+			bldr.canonicals = append(bldr.canonicals, cb)
 		}
-		cb.BlockNumber = blockNumber
-
-		bldr.canonicals = append(bldr.canonicals, cb)
 
 	default:
-		bldr.err = fmt.Errorf("Canonicals received unknown type")
+		bldr.err = fmt.Errorf("canonicals received unknown type")
 	}
 
 	return bldr

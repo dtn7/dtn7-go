@@ -28,8 +28,7 @@ func TestBundleApplyCRC(t *testing.T) {
 
 	var payload = NewCanonicalBlock(1, DeleteBundle, NewPayloadBlock([]byte("GuMo")))
 
-	var bndle, err = NewBundle(
-		primary, []CanonicalBlock{prevNode, payload})
+	var bndle, err = NewBundle(primary, []CanonicalBlock{prevNode}, payload)
 
 	if err != nil {
 		t.Fatal(err)
@@ -74,8 +73,7 @@ func TestBundleCbor(t *testing.T) {
 	var payload = NewCanonicalBlock(
 		1, DeleteBundle, NewPayloadBlock([]byte("GuMo meine Kernel")))
 
-	bundle1, err := NewBundle(
-		primary, []CanonicalBlock{prevNode, payload})
+	bundle1, err := NewBundle(primary, []CanonicalBlock{prevNode}, payload)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,35 +115,27 @@ func TestBundleExtensionBlock(t *testing.T) {
 			NewCreationTimestamp(DtnTimeEpoch, 0), 3600),
 		[]CanonicalBlock{
 			NewCanonicalBlock(2, 0, NewBundleAgeBlock(420)),
-			NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world"))),
-		})
+		},
+		NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world"))))
 
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if cb, err := bndl.ExtensionBlock(BlockTypePreviousNodeBlock); err == nil {
+	if cb, err := bndl.ExtensionBlockByType(BlockTypePreviousNodeBlock); err == nil {
 		t.Fatalf("Bundle returned a non-existing Extension Block: %v", cb)
 	}
 
-	if _, err := bndl.ExtensionBlock(BlockTypeBundleAgeBlock); err != nil {
-		t.Fatalf("Bundle did not returned the existing Bundle Age block: %v", err)
-	}
-
-	if _, err := bndl.ExtensionBlock(BlockTypePayloadBlock); err != nil {
-		t.Fatalf("Bundle did not returned the existing Payload block: %v", err)
-	}
-
-	if _, err := bndl.PayloadBlock(); err != nil {
-		t.Fatalf("Bundle did not returned the existing Payload block: %v", err)
+	if _, err := bndl.ExtensionBlockByType(BlockTypeBundleAgeBlock); err != nil {
+		t.Fatalf("Bundle did not return the existing Bundle Age block: %v", err)
 	}
 }
 
 // createNewBundle is used in the TestBundleCheckValid function and returns
 // the Bundle with an ignored error. The error will be checked in this
 // test case.
-func createNewBundle(primary PrimaryBlock, canonicals []CanonicalBlock) *Bundle {
-	b, _ := NewBundle(primary, canonicals)
+func createNewBundle(primary PrimaryBlock, extensions []CanonicalBlock, payload CanonicalBlock) *Bundle {
+	b, _ := NewBundle(primary, extensions, payload)
 
 	return b
 }
@@ -159,33 +149,25 @@ func TestBundleCheckValid(t *testing.T) {
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
-			[]CanonicalBlock{
-				NewCanonicalBlock(1, StatusReportBlock, NewPayloadBlock(nil))}),
+			[]CanonicalBlock{},
+			NewCanonicalBlock(1, StatusReportBlock, NewPayloadBlock(nil))),
 			false},
 
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
-			[]CanonicalBlock{NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 1), 3600),
+			[]CanonicalBlock{},
+			NewCanonicalBlock(1, 0, NewPayloadBlock(nil))),
 			true},
-
-		// Block number (1) occurs twice
-		{createNewBundle(
-			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
-			[]CanonicalBlock{
-				NewCanonicalBlock(1, 0, NewPayloadBlock(nil)),
-				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
-			false},
 
 		// Two Hop Count blocks
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
-				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 0), 3600),
+				DtnNone(), DtnNone(), NewCreationTimestamp(42000000000000, 2), 3600),
 			[]CanonicalBlock{
 				NewCanonicalBlock(23, 0, NewHopCountBlock(23)),
-				NewCanonicalBlock(24, 0, NewHopCountBlock(23)),
-				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
+				NewCanonicalBlock(24, 0, NewHopCountBlock(23))},
+			NewCanonicalBlock(1, 0, NewPayloadBlock(nil))),
 			false},
 
 		// Creation Time = 0, no Bundle Age block
@@ -193,14 +175,14 @@ func TestBundleCheckValid(t *testing.T) {
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(0, 0), 3600),
 			[]CanonicalBlock{
-				NewCanonicalBlock(2, 0, NewBundleAgeBlock(420)),
-				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
+				NewCanonicalBlock(2, 0, NewBundleAgeBlock(420))},
+			NewCanonicalBlock(1, 0, NewPayloadBlock(nil))),
 			true},
 		{createNewBundle(
 			NewPrimaryBlock(MustNotFragmented|AdministrativeRecordPayload,
 				DtnNone(), DtnNone(), NewCreationTimestamp(0, 0), 3600),
-			[]CanonicalBlock{
-				NewCanonicalBlock(1, 0, NewPayloadBlock(nil))}),
+			[]CanonicalBlock{},
+			NewCanonicalBlock(1, 0, NewPayloadBlock(nil))),
 			false},
 	}
 
@@ -218,12 +200,10 @@ func TestBundleAddRemoveExtensionBlocks(t *testing.T) {
 		MustNewEndpointID("dtn://src/"),
 		NewCreationTimestamp(DtnTimeEpoch, 0),
 		60*60*1000000)
-	canonicals := []CanonicalBlock{
-		NewCanonicalBlock(2, 0, NewBundleAgeBlock(9001)),
-		NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world"))),
-	}
+	extensions := []CanonicalBlock{NewCanonicalBlock(2, 0, NewBundleAgeBlock(9001))}
+	payload := NewCanonicalBlock(1, 0, NewPayloadBlock([]byte("hello world")))
 
-	b, err := NewBundle(primary, canonicals)
+	b, err := NewBundle(primary, extensions, payload)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +219,7 @@ func TestBundleAddRemoveExtensionBlocks(t *testing.T) {
 		t.Fatalf("previous node block is not present")
 	}
 
-	if previousNodeBlock, err := b.ExtensionBlock(BlockTypePreviousNodeBlock); err != nil {
+	if previousNodeBlock, err := b.ExtensionBlockByType(BlockTypePreviousNodeBlock); err != nil {
 		t.Fatal(err)
 	} else {
 		b.RemoveExtensionBlockByBlockNumber(previousNodeBlock.BlockNumber)
@@ -267,13 +247,14 @@ func BenchmarkBundleSerializationCboring(b *testing.B) {
 				NewCreationTimestamp(DtnTimeEpoch, 0),
 				60*60*1000000)
 
-			canonicals := []CanonicalBlock{
+			extensions := []CanonicalBlock{
 				NewCanonicalBlock(2, 0, NewBundleAgeBlock(0)),
 				NewCanonicalBlock(3, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn://prev/"))),
-				NewCanonicalBlock(1, 0, NewPayloadBlock(payload)),
 			}
 
-			bndl := MustNewBundle(primary, canonicals)
+			payloadBlock := NewCanonicalBlock(1, 0, NewPayloadBlock(payload))
+
+			bndl := MustNewBundle(primary, extensions, payloadBlock)
 			bndl.SetCRCType(crc)
 
 			b.Run(fmt.Sprintf("%d-%v", size, crc), func(b *testing.B) {
@@ -305,13 +286,14 @@ func BenchmarkBundleDeserializationCboring(b *testing.B) {
 				NewCreationTimestamp(DtnTimeEpoch, 0),
 				60*60*1000000)
 
-			canonicals := []CanonicalBlock{
+			extensions := []CanonicalBlock{
 				NewCanonicalBlock(2, 0, NewBundleAgeBlock(0)),
 				NewCanonicalBlock(3, 0, NewPreviousNodeBlock(MustNewEndpointID("dtn://prev/"))),
-				NewCanonicalBlock(1, 0, NewPayloadBlock(payload)),
 			}
 
-			bndl := MustNewBundle(primary, canonicals)
+			payloadBlock := NewCanonicalBlock(1, 0, NewPayloadBlock(payload))
+
+			bndl := MustNewBundle(primary, extensions, payloadBlock)
 			bndl.SetCRCType(crc)
 
 			buff := new(bytes.Buffer)

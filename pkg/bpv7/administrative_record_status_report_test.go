@@ -157,7 +157,7 @@ func TestStatusReportApplicationRecord(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if !reflect.DeepEqual(outBndl, inBndl) {
+	if !reflect.DeepEqual(*outBndl, *inBndl) {
 		t.Fatalf("CBOR result differs: %v, %v", outBndl, inBndl)
 	}
 }
