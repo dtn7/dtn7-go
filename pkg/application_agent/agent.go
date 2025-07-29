@@ -13,6 +13,8 @@ type ApplicationAgent interface {
 
 	Deliver(bundleDescriptor *store.BundleDescriptor) error
 
+	Start() error
+
 	Shutdown()
 }
 

@@ -35,7 +35,7 @@ func NewQUICListener(listenAddress string, endpointID bpv7.EndpointID, receiveCa
 }
 
 func (listener *Listener) Close() error {
-	log.WithField("address", listener.listenAddress).Info("Shutting ourselves down")
+	log.WithField("address", listener.listenAddress).Info("Shutting down QUICL listener")
 	listener.running.Store(false)
 	return listener.quicListener.Close()
 }
@@ -75,8 +75,9 @@ func (listener *Listener) handle() {
 		session, err := listener.quicListener.Accept(context.Background())
 		if err != nil {
 			if !(errors.Is(err, context.DeadlineExceeded)) {
-				if err.Error() == "quic: Server closed" {
-					log.WithField("address", listener.listenAddress).Info("Shutting this place down")
+				errMsg := err.Error()
+				if errMsg == "quic: server closed" {
+					log.WithField("address", listener.listenAddress).Info("Cleaning up QUICL listener")
 					return
 				}
 

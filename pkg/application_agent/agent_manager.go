@@ -66,9 +66,11 @@ func (manager *Manager) RegisterAgent(newAgent ApplicationAgent) error {
 		manager.agents = append(manager.agents, newAgent)
 	}
 
+	err := newAgent.Start()
+
 	// TODO: check if there are pending bundles for this endpoint ID
 
-	return nil
+	return err
 }
 
 func (manager *Manager) UnregisterEndpoint(removeAgent ApplicationAgent) error {

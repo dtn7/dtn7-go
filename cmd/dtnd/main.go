@@ -1,12 +1,12 @@
 package main
 
 import (
-	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-co-op/gocron/v2"
-	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/pkg/application_agent"
@@ -123,23 +123,15 @@ func main() {
 	}
 	defer application_agent.GetManagerSingleton().Shutdown()
 
-	// TODO: make this asynchronous
-	r := mux.NewRouter()
-	restRouter := r.PathPrefix("/rest").Subrouter()
-	restAgent := application_agent.NewRestAgent(restRouter)
+	restAgent := application_agent.NewRestAgent("/rest", conf.Agents.REST.Address)
 	err = application_agent.GetManagerSingleton().RegisterAgent(restAgent)
 	if err != nil {
 		log.WithError(err).Fatal("Error registering REST application agent")
 	}
 
-	httpServer := &http.Server{
-		Addr:              conf.Agents.REST.Address,
-		Handler:           r,
-		ReadHeaderTimeout: 60 * time.Second,
-	}
-
-	err = httpServer.ListenAndServe()
-	if err != nil {
-		log.WithError(err).Fatal("Error with agent web server")
-	}
+	// wait for SIGINT or SIGTERM
+	c := make(chan os.Signal, 2)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	<-c
+	return
 }

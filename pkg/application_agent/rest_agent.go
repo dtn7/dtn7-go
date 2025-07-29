@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -71,7 +72,8 @@ import (
 //	// -> {"uuid":"75be76e2-23fc-da0e-eeb8-4773f84a9d2f"}
 //	// <- {"error":""}
 type RestAgent struct {
-	router *mux.Router
+	router        *mux.Router
+	listenAddress string
 
 	// map UUIDs to EIDs and received bundles
 	clients      sync.Map // uuid[string] -> bpv7.EndpointID
@@ -80,10 +82,14 @@ type RestAgent struct {
 }
 
 // NewRestAgent creates a new RESTful Application Agent.
-func NewRestAgent(router *mux.Router) (ra *RestAgent) {
+func NewRestAgent(prefix, listenAddress string) (ra *RestAgent) {
+	r := mux.NewRouter()
+	restRouter := r.PathPrefix(prefix).Subrouter()
+
 	ra = &RestAgent{
-		router:    router,
-		mailboxes: make(map[string]map[bpv7.BundleID]bpv7.Bundle),
+		router:        restRouter,
+		listenAddress: listenAddress,
+		mailboxes:     make(map[string]map[bpv7.BundleID]bpv7.Bundle),
 	}
 
 	ra.router.HandleFunc("/register", ra.handleRegister).Methods(http.MethodPost)
@@ -92,6 +98,22 @@ func NewRestAgent(router *mux.Router) (ra *RestAgent) {
 	ra.router.HandleFunc("/build", ra.handleBuild).Methods(http.MethodPost)
 
 	return ra
+}
+
+func (ra *RestAgent) Start() error {
+	httpServer := &http.Server{
+		Addr:              ra.listenAddress,
+		Handler:           ra.router,
+		ReadHeaderTimeout: 60 * time.Second,
+	}
+
+	go httpServer.ListenAndServe()
+
+	return nil
+}
+
+func (ra *RestAgent) Shutdown() {
+
 }
 
 // Deliver checks incoming BundleMessages and puts them inbox.
@@ -280,8 +302,4 @@ func (ra *RestAgent) Endpoints() (eids []bpv7.EndpointID) {
 		return false
 	})
 	return
-}
-
-func (ra *RestAgent) Shutdown() {
-
 }
