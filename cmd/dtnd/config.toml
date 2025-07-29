@@ -13,6 +13,9 @@ algorithm = "epidemic"
 # Address to bind the server to.
 address = "localhost:8080"
 
+[Agents.REC]
+address = "/tmp/rec_agent.sock"
+
 [[Listener]]
 type = "QUICL"
 address = ":35037"

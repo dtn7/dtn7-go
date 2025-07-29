@@ -13,6 +13,7 @@ require (
 	github.com/schollz/peerdiscovery v1.7.6
 	github.com/sirupsen/logrus v1.9.3
 	github.com/timshannon/badgerhold/v4 v4.0.3
+	github.com/vmihailenco/msgpack/v5 v5.4.1
 	golang.org/x/sync v0.15.0
 	golang.org/x/sys v0.33.0
 	pgregory.net/rapid v1.2.0
@@ -31,6 +32,7 @@ require (
 	github.com/jonboulle/clockwork v0.5.0 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel v1.37.0 // indirect
 	go.opentelemetry.io/otel/metric v1.37.0 // indirect

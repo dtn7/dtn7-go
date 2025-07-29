@@ -3,7 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package application_agent
+package rest_agent
 
 import (
 	"crypto/rand"
@@ -16,6 +16,7 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/dtn7/dtn7-go/pkg/application_agent"
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
@@ -26,7 +27,7 @@ import (
 // retrieved or new bundles can be sent. For sending, bundles can be created by calling the BundleBuilder. Finally,
 // a client should unregister itself.
 //
-// This is all done by HTTP POSTing JSON objects. Their structure is described in `rest_agent_messages.go` by the types
+// This is all done by HTTP POSTing JSON objects. Their structure is described in `messages.go` by the types
 // with the `Rest` prefix in their names.
 //
 // A possible conversation follows as an example.
@@ -287,7 +288,7 @@ func (ra *RestAgent) handleBuild(w http.ResponseWriter, r *http.Request) {
 			"uuid":   buildRequest.UUID,
 			"bundle": b.ID().String(),
 		}).Info("REST client sent bundle")
-		GetManagerSingleton().Send(b)
+		application_agent.GetManagerSingleton().Send(b)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

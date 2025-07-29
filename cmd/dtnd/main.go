@@ -10,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/pkg/application_agent"
+	"github.com/dtn7/dtn7-go/pkg/application_agent/rest_agent"
+	"github.com/dtn7/dtn7-go/pkg/application_agent/unix_agent"
 	"github.com/dtn7/dtn7-go/pkg/cla"
 	"github.com/dtn7/dtn7-go/pkg/cla/dummy_cla"
 	"github.com/dtn7/dtn7-go/pkg/cla/mtcp"
@@ -123,10 +125,19 @@ func main() {
 	}
 	defer application_agent.GetManagerSingleton().Shutdown()
 
-	restAgent := application_agent.NewRestAgent("/rest", conf.Agents.REST.Address)
+	restAgent := rest_agent.NewRestAgent("/rest", conf.Agents.REST.Address)
 	err = application_agent.GetManagerSingleton().RegisterAgent(restAgent)
 	if err != nil {
 		log.WithError(err).Fatal("Error registering REST application agent")
+	}
+
+	recAgent, err := unix_agent.NewUNIXAgent(conf.Agents.REC.Address)
+	if err != nil {
+		log.WithError(err).Fatal("Error creating REC application agent")
+	}
+	err = application_agent.GetManagerSingleton().RegisterAgent(recAgent)
+	if err != nil {
+		log.WithError(err).Fatal("Error registering REC application agent")
 	}
 
 	// wait for SIGINT or SIGTERM
