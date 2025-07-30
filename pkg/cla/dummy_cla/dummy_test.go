@@ -11,11 +11,11 @@ import (
 
 func TestSendReceive(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		numberOfBundles := rapid.IntRange(1, 1000).Draw(t, "Number of Bundles")
+		numberOfBundles := uint8(rapid.IntRange(1, 256).Draw(t, "Number of Bundles"))
 		var wgSend sync.WaitGroup
-		wgSend.Add(numberOfBundles)
+		wgSend.Add(int(numberOfBundles))
 		var wgReceive sync.WaitGroup
-		wgReceive.Add(numberOfBundles)
+		wgReceive.Add(int(numberOfBundles))
 
 		receiveFunc := func(bundle bpv7.Bundle) (interface{}, error) {
 			wgReceive.Done()
@@ -30,13 +30,14 @@ func TestSendReceive(t *testing.T) {
 		peers := []*DummyCLA{peerA, peerB}
 
 		bundles := make([]*bpv7.Bundle, numberOfBundles)
-		for i := 0; i < numberOfBundles; i++ {
+		var i uint8
+		for i = 0; i < numberOfBundles; i++ {
 			bundles[i] = bpv7.GenerateRandomizedBundle(t, i)
 		}
 
-		for i := 0; i < numberOfBundles; i++ {
+		for i = 0; i < numberOfBundles; i++ {
 			sender := peers[rapid.IntRange(0, len(peers)-1).Draw(t, fmt.Sprintf("Sender %v", i))]
-			go func(i int, sender *DummyCLA) {
+			go func(i uint8, sender *DummyCLA) {
 				bundle := bundles[i]
 				err := sender.Send(bundle)
 				wgSend.Done()

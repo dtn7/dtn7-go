@@ -93,6 +93,10 @@ func (mailbox *Mailbox) Deliver(bndl *bpv7.Bundle) error {
 		return NewMailboxError(bid, NewAlreadyDeliveredError(bid))
 	}
 
+	if _, err := store.GetStoreSingleton().LoadBundleDescriptor(bndl.ID()); err != nil {
+		return NewMailboxError(bndl.ID(), err)
+	}
+
 	mailbox.messages[bid] = false
 
 	return nil

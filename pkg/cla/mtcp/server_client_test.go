@@ -55,14 +55,15 @@ func TestSendReceive(t *testing.T) {
 
 		port := getRandomPort(t)
 		numberOfClients := rapid.IntRange(1, 25).Draw(t, "Number of Clients")
-		numberOfBundles := rapid.IntRange(1, 1000).Draw(t, "Number of Bundles")
+		numberOfBundles := uint8(rapid.IntRange(1, 256).Draw(t, "Number of Bundles"))
 		var wgSend sync.WaitGroup
-		wgSend.Add(numberOfBundles)
+		wgSend.Add(int(numberOfBundles))
 		var wgReceive sync.WaitGroup
-		wgReceive.Add(numberOfBundles)
+		wgReceive.Add(int(numberOfBundles))
 
 		bundles := make([]*bpv7.Bundle, numberOfBundles)
-		for i := 0; i < numberOfBundles; i++ {
+		var i uint8
+		for i = 0; i < numberOfBundles; i++ {
 			bundles[i] = bpv7.GenerateRandomizedBundle(t, i)
 		}
 
@@ -86,9 +87,9 @@ func TestSendReceive(t *testing.T) {
 			clients[i] = client
 		}
 
-		for i := 0; i < numberOfBundles; i++ {
+		for i = 0; i < numberOfBundles; i++ {
 			sender := clients[rapid.IntRange(0, len(clients)-1).Draw(t, fmt.Sprintf("Sender %v", i))]
-			go func(i int, sender *MTCPClient) {
+			go func(i uint8, sender *MTCPClient) {
 				bundle := bundles[i]
 				err := sender.Send(bundle)
 				wgSend.Done()

@@ -195,7 +195,7 @@ func (eid EndpointID) IsSingleton() bool {
 	return eid.EndpointType.IsSingleton()
 }
 
-// SameNode checks if two Endpoints contain to the same Node, based on the scheme and authority part.
+// SameNode checks if two Endpoints refer to the same Node, based on the scheme and authority part.
 func (eid EndpointID) SameNode(other EndpointID) bool {
 	switch {
 	case eid.EndpointType == nil && other.EndpointType == nil,

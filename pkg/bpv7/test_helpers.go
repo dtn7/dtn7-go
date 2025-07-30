@@ -24,7 +24,7 @@ func GenerateSampleBundle(t *testing.T) *Bundle {
 	return bndl
 }
 
-func GenerateRandomizedBundle(t *rapid.T, i int) *Bundle {
+func GenerateRandomizedBundle(t *rapid.T, i uint8) *Bundle {
 	// TODO: more variable data
 	bndl, err := Builder().
 		CRC(CRC32).
