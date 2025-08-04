@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
 type MailboxBankError struct {
@@ -125,4 +126,16 @@ func (bank *MailboxBank) GetMailbox(eid bpv7.EndpointID) (*Mailbox, error) {
 	}
 
 	return mailbox, nil
+}
+
+func (bank *MailboxBank) Deliver(bundleDescriptor *store.BundleDescriptor) error {
+	bank.rwMutex.RLock()
+	defer bank.rwMutex.RUnlock()
+
+	destination := bundleDescriptor.Destination
+	destinationMailbox, ok := bank.mailboxes[destination]
+	if !ok {
+		return NewMailboxBankError(destination, NewNoSuchIDError(destination))
+	}
+	return destinationMailbox.Deliver(bundleDescriptor)
 }

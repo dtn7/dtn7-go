@@ -9,7 +9,6 @@ import (
 	"encoding/binary"
 	"io"
 	"net"
-	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -24,8 +23,7 @@ import (
 type UNIXAgent struct {
 	listenAddress *net.UnixAddr
 	listener      *net.UnixListener
-	mailboxes     map[bpv7.EndpointID]bpv7.Bundle
-	mailboxMutex  sync.Mutex
+	mailboxes     *application_agent.MailboxBank
 	stopChan      chan interface{}
 }
 
@@ -37,7 +35,7 @@ func NewUNIXAgent(listenAddress string) (*UNIXAgent, error) {
 
 	agent := UNIXAgent{
 		listenAddress: unixAddr,
-		mailboxes:     make(map[bpv7.EndpointID]bpv7.Bundle),
+		mailboxes:     application_agent.NewMailboxBank(),
 		stopChan:      make(chan interface{}),
 	}
 	return &agent, nil
@@ -52,11 +50,11 @@ func (agent *UNIXAgent) Shutdown() {
 }
 
 func (agent *UNIXAgent) Endpoints() []bpv7.EndpointID {
-	return []bpv7.EndpointID{}
+	return agent.mailboxes.RegisteredIDs()
 }
 
 func (agent *UNIXAgent) Deliver(bundleDescriptor *store.BundleDescriptor) error {
-	return nil
+	return agent.mailboxes.Deliver(bundleDescriptor)
 }
 
 func (agent *UNIXAgent) Start() error {

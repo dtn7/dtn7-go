@@ -83,18 +83,18 @@ func NewMailbox() *Mailbox {
 // Bundle has to have been stored in the store before delivery
 // Returns MailboxError in case of an error.
 // MailboxError wraps AlreadyDeliveredError if bundle with same BundleID is already stored.
-func (mailbox *Mailbox) Deliver(bndl *bpv7.Bundle) error {
+func (mailbox *Mailbox) Deliver(bndl *store.BundleDescriptor) error {
 	mailbox.rwMutex.Lock()
 	defer mailbox.rwMutex.Unlock()
 
-	bid := bndl.ID()
+	bid := bndl.ID
 
 	if _, ok := mailbox.messages[bid]; ok {
 		return NewMailboxError(bid, NewAlreadyDeliveredError(bid))
 	}
 
-	if _, err := store.GetStoreSingleton().LoadBundleDescriptor(bndl.ID()); err != nil {
-		return NewMailboxError(bndl.ID(), err)
+	if _, err := store.GetStoreSingleton().LoadBundleDescriptor(bndl.ID); err != nil {
+		return NewMailboxError(bndl.ID, err)
 	}
 
 	mailbox.messages[bid] = false
