@@ -7,12 +7,25 @@ package unix_agent
 type MessageType uint8
 
 const (
-	MsgTypeBundleCreate         MessageType = 1
-	MsgTypeBundleCreateResponse MessageType = 2
+	MsgTypeGeneralResponse MessageType = 1
+	MsgTypeRegisterEID     MessageType = 2
+	MsgTypeUnregisterEID   MessageType = 3
+	MsgTypeBundleCreate    MessageType = 4
 )
 
 type Message struct {
 	Type MessageType
+}
+
+type GeneralResponse struct {
+	Message
+	Success bool
+	Error   string
+}
+
+type RegisterUnregister struct {
+	Message
+	EndpointID string
 }
 
 type BundleCreate struct {
@@ -20,10 +33,4 @@ type BundleCreate struct {
 	Source      string
 	Destination string
 	Payload     []byte
-}
-
-type BundleCreateResponse struct {
-	Message
-	Success bool
-	Error   string
 }

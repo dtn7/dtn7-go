@@ -134,15 +134,30 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 
 	var replyBytes []byte
 	switch message.Type {
-	case 1:
-		createMessage := BundleCreate{}
-		err = msgpack.Unmarshal(msgBytes, &createMessage)
+	case MsgTypeRegisterEID, MsgTypeUnregisterEID:
+		typedMessage := RegisterUnregister{}
+		err = msgpack.Unmarshal(msgBytes, &typedMessage)
 		if err != nil {
 			log.WithField("error", err).Error("Failed unmarshaling Bundle create message")
 			return
 		}
-		log.WithField("message", createMessage).Debug("Typed message")
-		replyBytes, err = agent.handleBundleCreate(&createMessage)
+		log.WithField("message", typedMessage).Debug("Typed message")
+
+		replyBytes, err = agent.handleRegisterUnregister(&typedMessage, typedMessage.Message.Type == MsgTypeRegisterEID)
+
+		if err != nil {
+			log.WithField("error", err).Error("Error handling Bundle create message")
+			return
+		}
+	case MsgTypeBundleCreate:
+		typedMessage := BundleCreate{}
+		err = msgpack.Unmarshal(msgBytes, &typedMessage)
+		if err != nil {
+			log.WithField("error", err).Error("Failed unmarshaling Bundle create message")
+			return
+		}
+		log.WithField("message", typedMessage).Debug("Typed message")
+		replyBytes, err = agent.handleBundleCreate(&typedMessage)
 		if err != nil {
 			log.WithField("error", err).Error("Error handling Bundle create message")
 			return
@@ -183,11 +198,49 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 	}
 }
 
+func (agent *UNIXAgent) handleRegisterUnregister(message *RegisterUnregister, register bool) ([]byte, error) {
+	reply := GeneralResponse{
+		Message: Message{Type: MsgTypeGeneralResponse},
+		Success: true,
+		Error:   "",
+	}
+	failure := false
+
+	eid, err := bpv7.NewEndpointID(message.EndpointID)
+	if err != nil {
+		failure = true
+		reply.Success = false
+		reply.Error = err.Error()
+	}
+
+	if !failure {
+		if register {
+			err = agent.mailboxes.Register(eid)
+		} else {
+			err = agent.mailboxes.Unregister(eid)
+		}
+	}
+	if err != nil {
+		failure = true
+		reply.Success = false
+		reply.Error = err.Error()
+	}
+
+	log.Debug("Marshaling response")
+	replyBytes, err := msgpack.Marshal(&reply)
+	if err != nil {
+		log.WithField("error", err).Error("Response marshaling error")
+		return nil, err
+	}
+
+	return replyBytes, nil
+}
+
 func (agent *UNIXAgent) handleBundleCreate(message *BundleCreate) ([]byte, error) {
 	log.Debug("Handling bundle create")
 
-	reply := BundleCreateResponse{
-		Message: Message{Type: MsgTypeBundleCreateResponse},
+	reply := GeneralResponse{
+		Message: Message{Type: MsgTypeGeneralResponse},
 		Success: true,
 		Error:   "",
 	}
