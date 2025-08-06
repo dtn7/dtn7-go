@@ -104,19 +104,19 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 	connReader := bufio.NewReader(conn)
 	connWriter := bufio.NewWriter(conn)
 
-	msgLengthBytes := make([]byte, 8)
+	msgLenBytes := make([]byte, 8)
 	log.Debug("Receiving message length")
-	_, err := io.ReadFull(connReader, msgLengthBytes)
+	_, err := io.ReadFull(connReader, msgLenBytes)
 	if err != nil {
 		log.WithField("error", err).Error("Failed reading 8-byte message length")
 		return
 	}
 
-	msgLength := binary.BigEndian.Uint64(msgLengthBytes)
-	log.WithField("msgLength", msgLength).Debug("Received msgLength")
+	msgLen := binary.BigEndian.Uint64(msgLenBytes)
+	log.WithField("msgLength", msgLen).Debug("Received msgLength")
 
 	log.Debug("Receiving message")
-	msgBytes := make([]byte, msgLength)
+	msgBytes := make([]byte, msgLen)
 	_, err = io.ReadFull(connReader, msgBytes)
 	if err != nil {
 		log.WithField("error", err).Error("Failed reading message")
@@ -180,12 +180,6 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 		log.WithField("error", err).Error("Error sending reply length")
 		return
 	}
-	err = connWriter.Flush()
-	if err != nil {
-		log.WithField("error", err).Error("Error sending reply length")
-		return
-	}
-
 	_, err = connWriter.Write(replyBytes)
 	if err != nil {
 		log.WithField("error", err).Error("Error sending reply")
@@ -193,12 +187,18 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 	}
 	err = connWriter.Flush()
 	if err != nil {
-		log.WithField("error", err).Error("Error sending reply")
+		log.WithField("error", err).Error("Error flushing send buffer")
 		return
 	}
 }
 
 func (agent *UNIXAgent) handleRegisterUnregister(message *RegisterUnregister, register bool) ([]byte, error) {
+	if register {
+		log.WithField("eid", message.EndpointID).Info("Received registration request")
+	} else {
+		log.WithField("eid", message.EndpointID).Info("Received deregistration request")
+	}
+
 	reply := GeneralResponse{
 		Message: Message{Type: MsgTypeGeneralResponse},
 		Success: true,
@@ -211,6 +211,10 @@ func (agent *UNIXAgent) handleRegisterUnregister(message *RegisterUnregister, re
 		failure = true
 		reply.Success = false
 		reply.Error = err.Error()
+		log.WithFields(log.Fields{
+			"eid":   message.EndpointID,
+			"error": err,
+		}).Debug("Error parsing EndpointID")
 	}
 
 	if !failure {
@@ -224,6 +228,10 @@ func (agent *UNIXAgent) handleRegisterUnregister(message *RegisterUnregister, re
 		failure = true
 		reply.Success = false
 		reply.Error = err.Error()
+		log.WithFields(log.Fields{
+			"eid":   message.EndpointID,
+			"error": err,
+		}).Debug("Error performing (un)registration")
 	}
 
 	log.Debug("Marshaling response")

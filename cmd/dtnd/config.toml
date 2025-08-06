@@ -13,8 +13,8 @@ algorithm = "epidemic"
 # Address to bind the server to.
 address = "localhost:8080"
 
-[Agents.REC]
-address = "/tmp/rec_agent.sock"
+[Agents.UNIX]
+address = "/tmp/dtnd.socket"
 
 [[Listener]]
 type = "QUICL"

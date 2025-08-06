@@ -71,7 +71,7 @@ type listenerTomlConfig struct {
 // agentsConfig describes the ApplicationAgents/Agent-configuration block.
 type agentsConfig struct {
 	REST agentsRESTConfig
-	REC  agentsRECConfig
+	UNIX agentsUNIXConfig
 }
 
 // agentsWebserverConfig describes the nested "Webserver" configuration for agents.
@@ -79,7 +79,7 @@ type agentsRESTConfig struct {
 	Address string
 }
 
-type agentsRECConfig struct {
+type agentsUNIXConfig struct {
 	Address string
 }
 

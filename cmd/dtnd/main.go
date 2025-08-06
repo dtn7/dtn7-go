@@ -131,13 +131,13 @@ func main() {
 		log.WithError(err).Fatal("Error registering REST application agent")
 	}
 
-	recAgent, err := unix_agent.NewUNIXAgent(conf.Agents.REC.Address)
+	unixAgent, err := unix_agent.NewUNIXAgent(conf.Agents.UNIX.Address)
 	if err != nil {
-		log.WithError(err).Fatal("Error creating REC application agent")
+		log.WithError(err).Fatal("Error creating UNIX application agent")
 	}
-	err = application_agent.GetManagerSingleton().RegisterAgent(recAgent)
+	err = application_agent.GetManagerSingleton().RegisterAgent(unixAgent)
 	if err != nil {
-		log.WithError(err).Fatal("Error registering REC application agent")
+		log.WithError(err).Fatal("Error registering UNIX application agent")
 	}
 
 	// wait for SIGINT or SIGTERM
