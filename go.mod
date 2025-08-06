@@ -4,6 +4,7 @@ go 1.24
 
 require (
 	github.com/BurntSushi/toml v1.5.0
+	github.com/akamensky/argparse v1.4.0
 	github.com/dtn7/cboring v0.1.5
 	github.com/go-co-op/gocron/v2 v2.16.2
 	github.com/gorilla/mux v1.8.1
