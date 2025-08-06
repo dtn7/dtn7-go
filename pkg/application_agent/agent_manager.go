@@ -99,7 +99,7 @@ func (manager *Manager) Delivery(bundleDescriptor *store.BundleDescriptor) {
 				"bundle": bundleDescriptor.ID,
 				"agent":  agent,
 				"error":  err,
-			}).Error("Error delivering bundle")
+			}).Debug("Error delivering bundle")
 		}
 	}
 }

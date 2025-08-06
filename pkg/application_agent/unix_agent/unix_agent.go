@@ -254,35 +254,7 @@ func (agent *UNIXAgent) handleBundleCreate(message *BundleCreate) ([]byte, error
 	}
 
 	failed := false
-	bldr := bpv7.Builder()
-	bldr.Lifetime("60m")
-	bldr.CreationTimestampNow()
-	bldr.PayloadBlock(message.Payload)
-
-	log.WithField("eid", message.Source).Debug("Parsing source id")
-	sourceID, err := bpv7.NewEndpointID(message.Source)
-	if err != nil {
-		failed = true
-		reply.Success = false
-		reply.Error = err.Error()
-	} else {
-		bldr.Source(sourceID)
-	}
-
-	if !failed {
-		log.WithField("eid", message.Destination).Debug("Parsing destination id")
-		destinationID, err := bpv7.NewEndpointID(message.Destination)
-		if err != nil {
-			failed = true
-			reply.Success = false
-			reply.Error = err.Error()
-		} else {
-			bldr.Destination(destinationID)
-		}
-	}
-
-	log.Debug("Building bundle")
-	bundle, err := bldr.Build()
+	bundle, err := bpv7.BuildFromMap(message.Args)
 	if err != nil {
 		log.WithField("error", err).Debug("Error building bundle")
 		failed = true

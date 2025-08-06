@@ -30,7 +30,5 @@ type RegisterUnregister struct {
 
 type BundleCreate struct {
 	Message
-	Source      string
-	Destination string
-	Payload     []byte
+	Args map[string]interface{}
 }
