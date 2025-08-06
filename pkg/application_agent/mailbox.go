@@ -12,27 +12,6 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
-type MailboxError struct {
-	bid bpv7.BundleID
-	err error
-}
-
-func NewMailboxError(bid bpv7.BundleID, err error) *MailboxError {
-	merr := MailboxError{
-		bid: bid,
-		err: err,
-	}
-	return &merr
-}
-
-func (merr *MailboxError) Error() string {
-	return fmt.Sprintf("Error delivering Bundle: %v", merr.bid.String())
-}
-
-func (merr *MailboxError) Unwrap() error {
-	return merr.err
-}
-
 type AlreadyDeliveredError struct {
 	bid bpv7.BundleID
 }
@@ -81,8 +60,8 @@ func NewMailbox() *Mailbox {
 
 // Deliver delivers bundle to mailbox.
 // Bundle has to have been stored in the store before delivery
-// Returns MailboxError in case of an error.
-// MailboxError wraps AlreadyDeliveredError if bundle with same BundleID is already stored.
+// Returns AlreadyDeliveredError or error from the store.
+// Returns AlreadyDeliveredError if bundle with same BundleID is already stored.
 func (mailbox *Mailbox) Deliver(bndl *store.BundleDescriptor) error {
 	mailbox.rwMutex.Lock()
 	defer mailbox.rwMutex.Unlock()
@@ -90,11 +69,11 @@ func (mailbox *Mailbox) Deliver(bndl *store.BundleDescriptor) error {
 	bid := bndl.ID
 
 	if _, ok := mailbox.messages[bid]; ok {
-		return NewMailboxError(bid, NewAlreadyDeliveredError(bid))
+		return NewAlreadyDeliveredError(bid)
 	}
 
 	if _, err := store.GetStoreSingleton().LoadBundleDescriptor(bndl.ID); err != nil {
-		return NewMailboxError(bndl.ID, err)
+		return err
 	}
 
 	mailbox.messages[bid] = false
@@ -132,9 +111,8 @@ func (mailbox *Mailbox) ListNew() []bpv7.BundleID {
 
 // Get returns the Bundle for a given BundleID.
 // If remove is set, then the bundle will be deleted from the mailbox
-// Returns MailboxError in case of an error.
-// MailboxError wraps either NewNoSuchBundleError or error coming from the store.
-// If no bundle for the given ID is stored, it returns NewNoSuchBundleError
+// Returns NewNoSuchBundleError or error coming from the store.
+// Returns NewNoSuchBundleError if no bundle for the given ID is stored
 func (mailbox *Mailbox) Get(bid bpv7.BundleID, remove bool) (*bpv7.Bundle, error) {
 	if remove {
 		mailbox.rwMutex.Lock()
@@ -151,12 +129,12 @@ func (mailbox *Mailbox) Get(bid bpv7.BundleID, remove bool) (*bpv7.Bundle, error
 
 	bd, err := store.GetStoreSingleton().LoadBundleDescriptor(bid)
 	if err != nil {
-		return nil, NewMailboxError(bid, err)
+		return nil, err
 	}
 
 	bndl, err := bd.Load()
 	if err != nil {
-		return nil, NewMailboxError(bid, err)
+		return nil, err
 	}
 
 	if remove {
@@ -170,8 +148,7 @@ func (mailbox *Mailbox) Get(bid bpv7.BundleID, remove bool) (*bpv7.Bundle, error
 
 // GetAll returns slice of all bundles in the mailbox.
 // If remove is set, then the mailbox will be cleared.
-// Returns MailboxError in case of an error.
-// MailboxError wraps error coming from the store.
+// Returns error coming from the store.
 // In case of an error, still returns all bundles that were successfully loaded before the error
 func (mailbox *Mailbox) GetAll(remove bool) ([]*bpv7.Bundle, error) {
 	if remove {
@@ -186,12 +163,12 @@ func (mailbox *Mailbox) GetAll(remove bool) ([]*bpv7.Bundle, error) {
 	for bid := range mailbox.messages {
 		bd, err := store.GetStoreSingleton().LoadBundleDescriptor(bid)
 		if err != nil {
-			return nil, NewMailboxError(bid, err)
+			return nil, err
 		}
 
 		bndl, err := bd.Load()
 		if err != nil {
-			return bndls, NewMailboxError(bid, err)
+			return bndls, err
 		}
 
 		bndls = append(bndls, bndl)
@@ -207,8 +184,7 @@ func (mailbox *Mailbox) GetAll(remove bool) ([]*bpv7.Bundle, error) {
 
 // GetNew returns slice of all bundles in the mailbox that have not been retrieved before.
 // If remove is set, then the mailbox will be cleared.
-// Returns MailboxError in case of an error.
-// MailboxError wraps error coming from the store.
+// Returns error coming from the store.
 // In case of an error, still returns all bundles that were successfully loaded before the error
 func (mailbox *Mailbox) GetNew(remove bool) ([]*bpv7.Bundle, error) {
 	if remove {
@@ -227,12 +203,12 @@ func (mailbox *Mailbox) GetNew(remove bool) ([]*bpv7.Bundle, error) {
 
 		bd, err := store.GetStoreSingleton().LoadBundleDescriptor(bid)
 		if err != nil {
-			return nil, NewMailboxError(bid, err)
+			return nil, err
 		}
 
 		bndl, err := bd.Load()
 		if err != nil {
-			return bndls, NewMailboxError(bid, err)
+			return bndls, err
 		}
 
 		bndls = append(bndls, bndl)

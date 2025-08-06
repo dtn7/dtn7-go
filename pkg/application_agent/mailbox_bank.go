@@ -8,27 +8,6 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
-type MailboxBankError struct {
-	eid bpv7.EndpointID
-	err error
-}
-
-func NewMailboxBankError(eid bpv7.EndpointID, err error) *MailboxBankError {
-	mberr := MailboxBankError{
-		eid: eid,
-		err: err,
-	}
-	return &mberr
-}
-
-func (mberr *MailboxBankError) Error() string {
-	return fmt.Sprintf("Error with mailbox for id %v", mberr.eid.String())
-}
-
-func (mberr *MailboxBankError) Unwrap() error {
-	return mberr.err
-}
-
 type IDAlreadyRegisteredError struct {
 	eid bpv7.EndpointID
 }
@@ -79,7 +58,7 @@ func (bank *MailboxBank) Register(eid bpv7.EndpointID) error {
 	defer bank.rwMutex.Unlock()
 
 	if _, ok := bank.mailboxes[eid]; ok {
-		return NewMailboxBankError(eid, NewIDAlreadyRegisteredError(eid))
+		return NewIDAlreadyRegisteredError(eid)
 	}
 
 	bank.registeredIDs = append(bank.registeredIDs, eid)
@@ -93,7 +72,7 @@ func (bank *MailboxBank) Unregister(eid bpv7.EndpointID) error {
 	defer bank.rwMutex.Unlock()
 
 	if _, ok := bank.mailboxes[eid]; !ok {
-		return NewMailboxBankError(eid, NewNoSuchIDError(eid))
+		return NewNoSuchIDError(eid)
 	}
 
 	remainingIDs := make([]bpv7.EndpointID, 0, len(bank.registeredIDs))
@@ -122,7 +101,7 @@ func (bank *MailboxBank) GetMailbox(eid bpv7.EndpointID) (*Mailbox, error) {
 
 	mailbox, ok := bank.mailboxes[eid]
 	if !ok {
-		return nil, NewMailboxBankError(eid, NewNoSuchIDError(eid))
+		return nil, NewNoSuchIDError(eid)
 	}
 
 	return mailbox, nil
@@ -135,7 +114,7 @@ func (bank *MailboxBank) Deliver(bundleDescriptor *store.BundleDescriptor) error
 	destination := bundleDescriptor.Destination
 	destinationMailbox, ok := bank.mailboxes[destination]
 	if !ok {
-		return NewMailboxBankError(destination, NewNoSuchIDError(destination))
+		return NewNoSuchIDError(destination)
 	}
 	return destinationMailbox.Deliver(bundleDescriptor)
 }
