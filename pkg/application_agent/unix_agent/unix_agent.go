@@ -164,12 +164,24 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 		typedMessage := MailboxListMessage{}
 		err = msgpack.Unmarshal(msgBytes, &typedMessage)
 		if err != nil {
-			log.WithField("error", err).Error("Failed unmarshaling Bundle create message")
+			log.WithField("error", err).Error("Failed unmarshaling list message")
 			return
 		}
 		replyBytes, err = agent.handleMailboxList(&typedMessage)
 		if err != nil {
-			log.WithField("error", err).Error("Error handling Bundle create message")
+			log.WithField("error", err).Error("Error handling list message")
+			return
+		}
+	case MsgTypeGetBundle:
+		typedMessage := GetBundleMessage{}
+		err = msgpack.Unmarshal(msgBytes, &typedMessage)
+		if err != nil {
+			log.WithField("error", err).Error("Failed unmarshaling get message")
+			return
+		}
+		replyBytes, err = agent.handleGetBundle(&typedMessage)
+		if err != nil {
+			log.WithField("error", err).Error("Error handling get message")
 			return
 		}
 	default:
@@ -303,8 +315,8 @@ func (agent *UNIXAgent) handleMailboxList(message *MailboxListMessage) ([]byte, 
 	eid, err := bpv7.NewEndpointID(message.Mailbox)
 	if err != nil {
 		failure = true
-		response.GeneralResponse.Success = false
-		response.GeneralResponse.Error = err.Error()
+		response.Success = false
+		response.Error = err.Error()
 		log.WithFields(log.Fields{
 			"eid":   message.Mailbox,
 			"error": err,
@@ -316,8 +328,8 @@ func (agent *UNIXAgent) handleMailboxList(message *MailboxListMessage) ([]byte, 
 		mailbox, err = agent.mailboxes.GetMailbox(eid)
 		if err != nil {
 			failure = true
-			response.GeneralResponse.Success = false
-			response.GeneralResponse.Error = err.Error()
+			response.Success = false
+			response.Error = err.Error()
 			log.WithFields(log.Fields{
 				"eid":   message.Mailbox,
 				"error": err,
@@ -341,6 +353,85 @@ func (agent *UNIXAgent) handleMailboxList(message *MailboxListMessage) ([]byte, 
 			"eid":     message.Mailbox,
 			"bundles": bundlesStr,
 		}).Debug("Got list of bundles")
+	}
+
+	log.Debug("Marshaling response")
+	responseBytes, err := msgpack.Marshal(&response)
+	if err != nil {
+		log.WithField("error", err).Error("Response marshaling error")
+		return nil, err
+	}
+
+	return responseBytes, nil
+}
+
+func (agent *UNIXAgent) handleGetBundle(message *GetBundleMessage) ([]byte, error) {
+	log.Debug("Handling get bundle")
+	response := GetBundleResponse{
+		GeneralResponse: GeneralResponse{
+			Message: Message{Type: MsgTypeGetBundleResponse},
+			Success: true,
+			Error:   "",
+		},
+		BundleContents: BundleContents{},
+	}
+
+	failure := false
+	eid, err := bpv7.NewEndpointID(message.Mailbox)
+	if err != nil {
+		failure = true
+		response.Success = false
+		response.Error = err.Error()
+		log.WithFields(log.Fields{
+			"bid":   message.BundleID,
+			"error": err,
+		}).Debug("Error parsing EndpointID")
+	}
+
+	var mailbox *application_agent.Mailbox
+	if !failure {
+		mailbox, err = agent.mailboxes.GetMailbox(eid)
+		if err != nil {
+			failure = true
+			response.Success = false
+			response.Error = err.Error()
+			log.WithFields(log.Fields{
+				"eid":   message.Mailbox,
+				"error": err,
+			}).Debug("Error getting mailbox")
+		}
+	}
+
+	var bid bpv7.BundleID
+	if !failure {
+		bid, err = bpv7.NewBundleID(message.BundleID)
+		if err != nil {
+			failure = true
+			response.Success = false
+			response.Error = err.Error()
+			log.WithFields(log.Fields{
+				"eid":   message.Mailbox,
+				"error": err,
+			}).Debug("Error parsing BundleID")
+		}
+	}
+
+	if !failure {
+		bundle, err := mailbox.Get(bid, message.Remove)
+		if err != nil {
+			failure = true
+			response.Success = false
+			response.Error = err.Error()
+			log.WithFields(log.Fields{
+				"eid":   message.Mailbox,
+				"error": err,
+			}).Debug("Error retrieving bundle")
+		} else {
+			response.BundleID = bundle.ID().String()
+			response.SourceID = bundle.PrimaryBlock.SourceNode.String()
+			response.DestinationID = bundle.PrimaryBlock.Destination.String()
+			response.Payload = *bundle.PayloadBlock.Value.(*bpv7.PayloadBlock)
+		}
 	}
 
 	log.Debug("Marshaling response")

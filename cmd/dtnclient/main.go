@@ -79,6 +79,28 @@ func main() {
 		Default:  false,
 	})
 
+	get := parser.NewCommand("get", "Get bundles from mailbox")
+	getMailboxID := get.String("m", "mailbox", &argparse.Options{
+		Help:     "EndpointID of mailbox",
+		Required: true,
+	})
+	getRemove := get.Flag("r", "remove", &argparse.Options{
+		Help:     "Delete bundle from mailbox after retrieval",
+		Required: false,
+		Default:  false,
+	})
+
+	getBundle := get.NewCommand("bundle", "Get bundle by ID")
+	getBundleID := getBundle.String("b", "bundle", &argparse.Options{
+		Help:     "BundleID of bundle",
+		Required: true,
+	})
+	getBundleOutput := getBundle.String("o", "out", &argparse.Options{
+		Help:     "Where to output bundle payload, either 'stdout' or a filename",
+		Required: false,
+		Default:  "stdout",
+	})
+
 	err := parser.Parse(os.Args)
 	if err != nil {
 		fmt.Print(parser.Usage(err))
@@ -115,6 +137,10 @@ func main() {
 		)
 	} else if list.Happened() {
 		handleList(connReader, connWriter, *listMailboxID, *listNew)
+	} else if get.Happened() {
+		if getBundle.Happened() {
+			handleGetBundle(connReader, connWriter, *getMailboxID, *getBundleID, *getBundleOutput, *getRemove)
+		}
 	}
 }
 
@@ -361,11 +387,94 @@ func handleList(connReader *bufio.Reader, connWriter *bufio.Writer, mailboxID st
 		os.Exit(1)
 	}
 
-	if !reply.GeneralResponse.Success {
-		_, _ = fmt.Fprintln(os.Stderr, reply.GeneralResponse.Error)
+	if !reply.Success {
+		_, _ = fmt.Fprintln(os.Stderr, reply.Error)
 		os.Exit(1)
 	} else {
 		_, _ = fmt.Println(reply.Bundles)
+		os.Exit(0)
+	}
+}
+
+func handleGetBundle(connReader *bufio.Reader, connWriter *bufio.Writer, mailboxID, bundleID, output string, remove bool) {
+	msg := unix_agent.GetBundleMessage{
+		Message:  unix_agent.Message{Type: unix_agent.MsgTypeGetBundle},
+		Mailbox:  mailboxID,
+		BundleID: bundleID,
+		Remove:   remove,
+	}
+
+	msgBytes, err := msgpack.Marshal(&msg)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	msgLen := uint64(len(msgBytes))
+	msgLenBytes := make([]byte, 8)
+	_, err = binary.Encode(msgLenBytes, binary.BigEndian, msgLen)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	//send message
+	// send length of message
+	_, err = connWriter.Write(msgLenBytes)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	// send message
+	_, err = connWriter.Write(msgBytes)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	err = connWriter.Flush()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	// receive reply
+	// read length or reply
+	_, err = io.ReadFull(connReader, msgLenBytes)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	msgLen = binary.BigEndian.Uint64(msgLenBytes)
+	// create buffer of correct length
+	msgBytes = make([]byte, msgLen)
+	// read reply into buffer
+	_, err = io.ReadFull(connReader, msgBytes)
+	reply := unix_agent.GetBundleResponse{}
+	err = msgpack.Unmarshal(msgBytes, &reply)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	if !reply.Success {
+		_, _ = fmt.Fprintln(os.Stderr, reply.Error)
+		os.Exit(1)
+	} else {
+		if output == "stdout" {
+			_, _ = fmt.Print(string(reply.Payload))
+		} else {
+			file, err := os.Create(output)
+			if err != nil {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			defer file.Close()
+			_, err = file.Write(reply.Payload)
+			if err != nil {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+		}
 		os.Exit(0)
 	}
 }

@@ -7,10 +7,22 @@ package bpv7
 import (
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/dtn7/cboring"
 )
+
+type InvalidBundleID string
+
+func NewInvalidBundleID(uri string) *InvalidBundleID {
+	err := InvalidBundleID(uri)
+	return &err
+}
+
+func (err *InvalidBundleID) Error() string {
+	return fmt.Sprintf("%v is not a valid BundleID", err)
+}
 
 // BundleID identifies a bundle by its source node, creation timestamp and
 // fragmentation offset paired the total data length. The last two fields are
@@ -27,6 +39,50 @@ type BundleID struct {
 	IsFragment      bool
 	FragmentOffset  uint64
 	TotalDataLength uint64
+}
+
+func NewBundleID(uri string) (BundleID, error) {
+	bid := BundleID{IsFragment: false}
+
+	parts := strings.Split(uri, "-")
+	if (len(parts) != 3) && (len(parts) != 5) {
+		return bid, NewInvalidBundleID(uri)
+	}
+
+	eid, err := NewEndpointID(parts[0])
+	if err != nil {
+		return bid, err
+	}
+	bid.SourceNode = eid
+
+	timestamp, err := strconv.ParseUint(parts[1], 10, 64)
+	if err != nil {
+		return bid, err
+	}
+	bid.Timestamp[0] = timestamp
+
+	timestamp, err = strconv.ParseUint(parts[2], 10, 64)
+	if err != nil {
+		return bid, err
+	}
+	bid.Timestamp[1] = timestamp
+
+	if len(parts) == 5 {
+		bid.IsFragment = true
+		offset, err := strconv.ParseUint(parts[3], 10, 64)
+		if err != nil {
+			return bid, err
+		}
+		bid.FragmentOffset = offset
+
+		length, err := strconv.ParseUint(parts[4], 10, 64)
+		if err != nil {
+			return bid, err
+		}
+		bid.TotalDataLength = length
+	}
+
+	return bid, nil
 }
 
 func (bid BundleID) String() string {
