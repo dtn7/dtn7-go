@@ -184,6 +184,18 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 			log.WithField("error", err).Error("Error handling get message")
 			return
 		}
+	case MsgTypeGetAllBundles:
+		typedMessage := GetAllBundlesMessage{}
+		err = msgpack.Unmarshal(msgBytes, &typedMessage)
+		if err != nil {
+			log.WithField("error", err).Error("Failed unmarshaling getall message")
+			return
+		}
+		replyBytes, err = agent.handleGetAllBundles(&typedMessage)
+		if err != nil {
+			log.WithField("error", err).Error("Error handling getall message")
+			return
+		}
 	default:
 		log.Debug("Not doing anything with this message")
 		return
@@ -373,24 +385,24 @@ func (agent *UNIXAgent) handleGetBundle(message *GetBundleMessage) ([]byte, erro
 			Success: true,
 			Error:   "",
 		},
-		BundleContents: BundleContents{},
+		BundleContent: BundleContent{},
 	}
 
 	failure := false
-	eid, err := bpv7.NewEndpointID(message.Mailbox)
+	mid, err := bpv7.NewEndpointID(message.Mailbox)
 	if err != nil {
 		failure = true
 		response.Success = false
 		response.Error = err.Error()
 		log.WithFields(log.Fields{
-			"bid":   message.BundleID,
+			"bid":   message.Mailbox,
 			"error": err,
 		}).Debug("Error parsing EndpointID")
 	}
 
 	var mailbox *application_agent.Mailbox
 	if !failure {
-		mailbox, err = agent.mailboxes.GetMailbox(eid)
+		mailbox, err = agent.mailboxes.GetMailbox(mid)
 		if err != nil {
 			failure = true
 			response.Success = false
@@ -431,6 +443,83 @@ func (agent *UNIXAgent) handleGetBundle(message *GetBundleMessage) ([]byte, erro
 			response.SourceID = bundle.PrimaryBlock.SourceNode.String()
 			response.DestinationID = bundle.PrimaryBlock.Destination.String()
 			response.Payload = *bundle.PayloadBlock.Value.(*bpv7.PayloadBlock)
+		}
+	}
+
+	log.Debug("Marshaling response")
+	responseBytes, err := msgpack.Marshal(&response)
+	if err != nil {
+		log.WithField("error", err).Error("Response marshaling error")
+		return nil, err
+	}
+
+	return responseBytes, nil
+}
+
+func (agent *UNIXAgent) handleGetAllBundles(message *GetAllBundlesMessage) ([]byte, error) {
+	log.Debug("Handling get all bundles")
+	response := GetAllBundlesResponse{
+		GeneralResponse: GeneralResponse{
+			Message: Message{Type: MsgTypeGetAllBundlesResponse},
+			Success: true,
+			Error:   "",
+		},
+		Bundles: make([]BundleContent, 0),
+	}
+
+	failure := false
+	mid, err := bpv7.NewEndpointID(message.Mailbox)
+	if err != nil {
+		failure = true
+		response.Success = false
+		response.Error = err.Error()
+		log.WithFields(log.Fields{
+			"bid":   message.Mailbox,
+			"error": err,
+		}).Debug("Error parsing EndpointID")
+	}
+
+	var mailbox *application_agent.Mailbox
+	if !failure {
+		mailbox, err = agent.mailboxes.GetMailbox(mid)
+		if err != nil {
+			failure = true
+			response.Success = false
+			response.Error = err.Error()
+			log.WithFields(log.Fields{
+				"eid":   message.Mailbox,
+				"error": err,
+			}).Debug("Error getting mailbox")
+		}
+	}
+
+	if !failure {
+		var bundles []*bpv7.Bundle
+		if message.New {
+			bundles, err = mailbox.GetNew(message.Remove)
+		} else {
+			bundles, err = mailbox.GetAll(message.Remove)
+		}
+		if err != nil {
+			failure = true
+			response.Success = false
+			response.Error = err.Error()
+			log.WithFields(log.Fields{
+				"eid":   message.Mailbox,
+				"error": err,
+			}).Debug("Error retrieving bundle")
+		} else {
+			bundleContents := make([]BundleContent, len(bundles))
+			for i, bundle := range bundles {
+				bundleContent := BundleContent{
+					BundleID:      bundle.ID().String(),
+					SourceID:      bundle.PrimaryBlock.SourceNode.String(),
+					DestinationID: bundle.PrimaryBlock.Destination.String(),
+					Payload:       *bundle.PayloadBlock.Value.(*bpv7.PayloadBlock),
+				}
+				bundleContents[i] = bundleContent
+			}
+			response.Bundles = bundleContents
 		}
 	}
 

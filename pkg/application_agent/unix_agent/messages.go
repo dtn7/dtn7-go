@@ -7,14 +7,16 @@ package unix_agent
 type MessageType uint8
 
 const (
-	MsgTypeGeneralResponse   MessageType = 1
-	MsgTypeRegisterEID       MessageType = 2
-	MsgTypeUnregisterEID     MessageType = 3
-	MsgTypeBundleCreate      MessageType = 4
-	MsgTypeList              MessageType = 5
-	MsgTypeListResponse      MessageType = 6
-	MsgTypeGetBundle         MessageType = 7
-	MsgTypeGetBundleResponse MessageType = 8
+	MsgTypeGeneralResponse       MessageType = 1
+	MsgTypeRegisterEID           MessageType = 2
+	MsgTypeUnregisterEID         MessageType = 3
+	MsgTypeBundleCreate          MessageType = 4
+	MsgTypeList                  MessageType = 5
+	MsgTypeListResponse          MessageType = 6
+	MsgTypeGetBundle             MessageType = 7
+	MsgTypeGetBundleResponse     MessageType = 8
+	MsgTypeGetAllBundles         MessageType = 9
+	MsgTypeGetAllBundlesResponse MessageType = 10
 )
 
 type Message struct {
@@ -55,7 +57,7 @@ type GetBundleMessage struct {
 	Remove   bool
 }
 
-type BundleContents struct {
+type BundleContent struct {
 	BundleID      string
 	SourceID      string
 	DestinationID string
@@ -64,5 +66,17 @@ type BundleContents struct {
 
 type GetBundleResponse struct {
 	GeneralResponse
-	BundleContents
+	BundleContent
+}
+
+type GetAllBundlesMessage struct {
+	Message
+	Mailbox string
+	New     bool
+	Remove  bool
+}
+
+type GetAllBundlesResponse struct {
+	GeneralResponse
+	Bundles []BundleContent
 }

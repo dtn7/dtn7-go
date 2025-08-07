@@ -11,6 +11,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"strings"
 
 	"github.com/akamensky/argparse"
 	"github.com/vmihailenco/msgpack/v5"
@@ -101,6 +102,13 @@ func main() {
 		Default:  "stdout",
 	})
 
+	getAllBundles := get.NewCommand("all", "Get all bundles")
+	getAllBundlesNew := getAllBundles.Flag("n", "new", &argparse.Options{
+		Help:     "Get only new bundles (which have not been retrieved)",
+		Required: false,
+		Default:  false,
+	})
+
 	err := parser.Parse(os.Args)
 	if err != nil {
 		fmt.Print(parser.Usage(err))
@@ -140,6 +148,8 @@ func main() {
 	} else if get.Happened() {
 		if getBundle.Happened() {
 			handleGetBundle(connReader, connWriter, *getMailboxID, *getBundleID, *getBundleOutput, *getRemove)
+		} else if getAllBundles.Happened() {
+			handleGetAllBundles(connReader, connWriter, *getMailboxID, *getAllBundlesNew, *getRemove)
 		}
 	}
 }
@@ -476,5 +486,88 @@ func handleGetBundle(connReader *bufio.Reader, connWriter *bufio.Writer, mailbox
 			}
 		}
 		os.Exit(0)
+	}
+}
+
+func handleGetAllBundles(connReader *bufio.Reader, connWriter *bufio.Writer, mailboxID string, new bool, remove bool) {
+	msg := unix_agent.GetAllBundlesMessage{
+		Message: unix_agent.Message{Type: unix_agent.MsgTypeGetAllBundles},
+		Mailbox: mailboxID,
+		New:     new,
+		Remove:  remove,
+	}
+
+	msgBytes, err := msgpack.Marshal(&msg)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	msgLen := uint64(len(msgBytes))
+	msgLenBytes := make([]byte, 8)
+	_, err = binary.Encode(msgLenBytes, binary.BigEndian, msgLen)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	//send message
+	// send length of message
+	_, err = connWriter.Write(msgLenBytes)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	// send message
+	_, err = connWriter.Write(msgBytes)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	err = connWriter.Flush()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	// receive reply
+	// read length or reply
+	_, err = io.ReadFull(connReader, msgLenBytes)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	msgLen = binary.BigEndian.Uint64(msgLenBytes)
+	// create buffer of correct length
+	msgBytes = make([]byte, msgLen)
+	// read reply into buffer
+	_, err = io.ReadFull(connReader, msgBytes)
+	reply := unix_agent.GetAllBundlesResponse{}
+	err = msgpack.Unmarshal(msgBytes, &reply)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	if !reply.Success {
+		_, _ = fmt.Fprintln(os.Stderr, reply.Error)
+		os.Exit(1)
+	} else {
+		for _, bundle := range reply.Bundles {
+			filename := bundle.BundleID
+			filename = strings.ReplaceAll(filename, "/", "")
+			filename = strings.ReplaceAll(filename, ":", "")
+			file, err := os.Create(filename)
+			if err != nil {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			defer file.Close()
+			_, err = file.Write(bundle.Payload)
+			if err != nil {
+				_, _ = fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+		}
 	}
 }
