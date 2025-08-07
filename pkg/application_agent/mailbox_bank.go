@@ -8,34 +8,26 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
-type IDAlreadyRegisteredError struct {
-	eid bpv7.EndpointID
-}
+type IDAlreadyRegisteredError bpv7.EndpointID
 
 func NewIDAlreadyRegisteredError(eid bpv7.EndpointID) *IDAlreadyRegisteredError {
-	err := IDAlreadyRegisteredError{
-		eid: eid,
-	}
+	err := IDAlreadyRegisteredError(eid)
 	return &err
 }
 
 func (err *IDAlreadyRegisteredError) Error() string {
-	return fmt.Sprintf("ID has already been registered: %v", err.eid.String())
+	return fmt.Sprintf("ID has already been registered: %v", bpv7.EndpointID(*err).String())
 }
 
-type NoSuchIDError struct {
-	eid bpv7.EndpointID
-}
+type NoSuchIDError bpv7.EndpointID
 
 func NewNoSuchIDError(eid bpv7.EndpointID) *NoSuchIDError {
-	err := NoSuchIDError{
-		eid: eid,
-	}
+	err := NoSuchIDError(eid)
 	return &err
 }
 
 func (err *NoSuchIDError) Error() string {
-	return fmt.Sprintf("No such ID has been registered: %v", err.eid.String())
+	return fmt.Sprintf("No such ID has been registered: %v", bpv7.EndpointID(*err).String())
 }
 
 type MailboxBank struct {

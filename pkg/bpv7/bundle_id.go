@@ -21,7 +21,7 @@ func NewInvalidBundleID(uri string) *InvalidBundleID {
 }
 
 func (err *InvalidBundleID) Error() string {
-	return fmt.Sprintf("%v is not a valid BundleID", err)
+	return fmt.Sprintf("%v is not a valid BundleID", string(*err))
 }
 
 // BundleID identifies a bundle by its source node, creation timestamp and

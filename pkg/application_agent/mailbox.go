@@ -14,34 +14,26 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
-type AlreadyDeliveredError struct {
-	bid bpv7.BundleID
-}
+type AlreadyDeliveredError bpv7.BundleID
 
 func NewAlreadyDeliveredError(bid bpv7.BundleID) *AlreadyDeliveredError {
-	err := AlreadyDeliveredError{
-		bid: bid,
-	}
+	err := AlreadyDeliveredError(bid)
 	return &err
 }
 
 func (err *AlreadyDeliveredError) Error() string {
-	return fmt.Sprintf("Bundle %v already in mailbox", err.bid.String())
+	return fmt.Sprintf("Bundle %v already in mailbox", bpv7.BundleID(*err).String())
 }
 
-type NoSuchBundleError struct {
-	bid bpv7.BundleID
-}
+type NoSuchBundleError bpv7.BundleID
 
 func NewNoSuchBundleError(bid bpv7.BundleID) *NoSuchBundleError {
-	err := NoSuchBundleError{
-		bid: bid,
-	}
+	err := NoSuchBundleError(bid)
 	return &err
 }
 
 func (err *NoSuchBundleError) Error() string {
-	return fmt.Sprintf("No Bundle with id %v in mailbox", err.bid.String())
+	return fmt.Sprintf("No Bundle with id %v in mailbox", bpv7.BundleID(*err).String())
 }
 
 // Mailbox provides message storage/querying/delivery for application agents to use.
