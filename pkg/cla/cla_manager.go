@@ -110,28 +110,22 @@ func (manager *Manager) Register(cla Convergence) {
 // It will call the CLA's Start-method, wait for it to return and if no error was produced,
 // the CLA will be added to the manager's sender/receiver lists.
 func (manager *Manager) registerAsync(cla Convergence) {
-	log.WithField("cla", cla.Address()).Info("Registering new CLA")
 	manager.stateMutex.RLock()
-	log.WithField("cla", cla.Address()).Debug("Acquired read lock")
 
 	// check if this CLA is present in the manager's pendingStart-list
 	for _, pending := range manager.pendingStart {
 		if cla.Address() == pending.Address() {
 			log.WithField("cla", cla.Address()).Debug("CLA already being started")
 			manager.stateMutex.RUnlock()
-			log.WithField("cla", cla.Address()).Debug("Released read lock")
 			return
 		}
 	}
 
 	// check if this CLA is present in the manager's receiver-list
 	if _, ok := cla.(ConvergenceReceiver); ok {
-		log.WithField("cla", cla.Address()).Debug("CLA is receiver")
 		for _, registerdReceiver := range manager.receivers {
 			if cla.Address() == registerdReceiver.Address() {
-				log.WithField("cla", cla.Address()).Debug("CLA already registered as receiver")
 				manager.stateMutex.RUnlock()
-				log.WithField("cla", cla.Address()).Debug("Released read lock")
 				return
 			}
 		}
@@ -139,26 +133,20 @@ func (manager *Manager) registerAsync(cla Convergence) {
 
 	// check if this CLA is present in the manager's sender-list
 	if _, ok := cla.(ConvergenceSender); ok {
-		log.WithField("cla", cla.Address()).Debug("CLA is sender")
 		for _, registeredSender := range manager.senders {
 			if cla.Address() == registeredSender.Address() {
-				log.WithField("cla", cla.Address()).Debug("CLA already registered as sender")
 				manager.stateMutex.RUnlock()
-				log.WithField("cla", cla.Address()).Debug("Released read lock")
 				return
 			}
 		}
 	}
 	manager.stateMutex.RUnlock()
-	log.WithField("cla", cla.Address()).Debug("Released read lock")
 
 	manager.stateMutex.Lock()
-	log.WithField("cla", cla.Address()).Debug("Acquired state lock")
 	// add CLA to pendingStart, so that no-one else will try to start it while we're still working
 	manager.pendingStart = append(manager.pendingStart, cla)
 	log.WithField("cla", cla.Address()).Debug("Added cla to pending")
 	manager.stateMutex.Unlock()
-	log.WithField("cla", cla.Address()).Debug("Released state lock")
 
 	err := cla.Activate()
 	if err != nil {
@@ -171,8 +159,6 @@ func (manager *Manager) registerAsync(cla Convergence) {
 	}
 
 	manager.stateMutex.Lock()
-	log.WithField("cla", cla.Address()).Debug("Acquired state lock")
-	defer log.WithField("cla", cla.Address()).Debug("Released state lock")
 	defer manager.stateMutex.Unlock()
 
 	// remove the cla from the pending-list

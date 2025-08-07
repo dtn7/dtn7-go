@@ -68,6 +68,17 @@ func main() {
 		Default:  "stdin",
 	})
 
+	list := parser.NewCommand("list", "Query bundles in mailbox")
+	listMailboxID := list.String("i", "id", &argparse.Options{
+		Help:     "EndpointID of mailbox",
+		Required: true,
+	})
+	listNew := list.Flag("n", "new", &argparse.Options{
+		Help:     "List only new bundles (which have not been retrieved)",
+		Required: false,
+		Default:  false,
+	})
+
 	err := parser.Parse(os.Args)
 	if err != nil {
 		fmt.Print(parser.Usage(err))
@@ -102,12 +113,14 @@ func main() {
 			*lifetime,
 			*payload,
 		)
+	} else if list.Happened() {
+		handleList(connReader, connWriter, *listMailboxID, *listNew)
 	}
 }
 
 func handleRegisterUnregister(connReader *bufio.Reader, connWriter *bufio.Writer, eid string, register bool) {
 	// create message
-	msg := unix_agent.RegisterUnregister{
+	msg := unix_agent.RegisterUnregisterMessage{
 		Message:    unix_agent.Message{},
 		EndpointID: eid,
 	}
@@ -223,7 +236,7 @@ func handleCreate(
 	}
 	args["payload_block"] = payloadBytes
 
-	msg := unix_agent.BundleCreate{
+	msg := unix_agent.BundleCreateMessage{
 		Message: unix_agent.Message{Type: unix_agent.MsgTypeBundleCreate},
 		Args:    args,
 	}
@@ -285,6 +298,74 @@ func handleCreate(
 		os.Exit(1)
 	} else {
 		fmt.Println("Success")
+		os.Exit(0)
+	}
+}
+
+func handleList(connReader *bufio.Reader, connWriter *bufio.Writer, mailboxID string, new bool) {
+	msg := unix_agent.MailboxListMessage{
+		Message: unix_agent.Message{Type: unix_agent.MsgTypeList},
+		Mailbox: mailboxID,
+		New:     new,
+	}
+
+	msgBytes, err := msgpack.Marshal(&msg)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	msgLen := uint64(len(msgBytes))
+	msgLenBytes := make([]byte, 8)
+	_, err = binary.Encode(msgLenBytes, binary.BigEndian, msgLen)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	//send message
+	// send length of message
+	_, err = connWriter.Write(msgLenBytes)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	// send message
+	_, err = connWriter.Write(msgBytes)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	err = connWriter.Flush()
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	// receive reply
+	// read length or reply
+	_, err = io.ReadFull(connReader, msgLenBytes)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	msgLen = binary.BigEndian.Uint64(msgLenBytes)
+	// create buffer of correct length
+	msgBytes = make([]byte, msgLen)
+	// read reply into buffer
+	_, err = io.ReadFull(connReader, msgBytes)
+	reply := unix_agent.MailboxListResponse{}
+	err = msgpack.Unmarshal(msgBytes, &reply)
+	if err != nil {
+		_, _ = fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	if !reply.GeneralResponse.Success {
+		_, _ = fmt.Fprintln(os.Stderr, reply.GeneralResponse.Error)
+		os.Exit(1)
+	} else {
+		_, _ = fmt.Println(reply.Bundles)
 		os.Exit(0)
 	}
 }

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"sync"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
@@ -63,6 +65,8 @@ func NewMailbox() *Mailbox {
 // Returns AlreadyDeliveredError or error from the store.
 // Returns AlreadyDeliveredError if bundle with same BundleID is already stored.
 func (mailbox *Mailbox) Deliver(bndl *store.BundleDescriptor) error {
+	log.WithField("bid", bndl.ID).Debug("Delivering bundle to mailbox")
+
 	mailbox.rwMutex.Lock()
 	defer mailbox.rwMutex.Unlock()
 

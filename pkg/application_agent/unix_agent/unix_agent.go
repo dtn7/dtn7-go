@@ -135,13 +135,12 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 	var replyBytes []byte
 	switch message.Type {
 	case MsgTypeRegisterEID, MsgTypeUnregisterEID:
-		typedMessage := RegisterUnregister{}
+		typedMessage := RegisterUnregisterMessage{}
 		err = msgpack.Unmarshal(msgBytes, &typedMessage)
 		if err != nil {
 			log.WithField("error", err).Error("Failed unmarshaling Bundle create message")
 			return
 		}
-		log.WithField("message", typedMessage).Debug("Typed message")
 
 		replyBytes, err = agent.handleRegisterUnregister(&typedMessage, typedMessage.Message.Type == MsgTypeRegisterEID)
 
@@ -150,14 +149,25 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 			return
 		}
 	case MsgTypeBundleCreate:
-		typedMessage := BundleCreate{}
+		typedMessage := BundleCreateMessage{}
 		err = msgpack.Unmarshal(msgBytes, &typedMessage)
 		if err != nil {
 			log.WithField("error", err).Error("Failed unmarshaling Bundle create message")
 			return
 		}
-		log.WithField("message", typedMessage).Debug("Typed message")
 		replyBytes, err = agent.handleBundleCreate(&typedMessage)
+		if err != nil {
+			log.WithField("error", err).Error("Error handling Bundle create message")
+			return
+		}
+	case MsgTypeList:
+		typedMessage := MailboxListMessage{}
+		err = msgpack.Unmarshal(msgBytes, &typedMessage)
+		if err != nil {
+			log.WithField("error", err).Error("Failed unmarshaling Bundle create message")
+			return
+		}
+		replyBytes, err = agent.handleMailboxList(&typedMessage)
 		if err != nil {
 			log.WithField("error", err).Error("Error handling Bundle create message")
 			return
@@ -192,14 +202,14 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 	}
 }
 
-func (agent *UNIXAgent) handleRegisterUnregister(message *RegisterUnregister, register bool) ([]byte, error) {
+func (agent *UNIXAgent) handleRegisterUnregister(message *RegisterUnregisterMessage, register bool) ([]byte, error) {
 	if register {
 		log.WithField("eid", message.EndpointID).Info("Received registration request")
 	} else {
 		log.WithField("eid", message.EndpointID).Info("Received deregistration request")
 	}
 
-	reply := GeneralResponse{
+	response := GeneralResponse{
 		Message: Message{Type: MsgTypeGeneralResponse},
 		Success: true,
 		Error:   "",
@@ -209,8 +219,8 @@ func (agent *UNIXAgent) handleRegisterUnregister(message *RegisterUnregister, re
 	eid, err := bpv7.NewEndpointID(message.EndpointID)
 	if err != nil {
 		failure = true
-		reply.Success = false
-		reply.Error = err.Error()
+		response.Success = false
+		response.Error = err.Error()
 		log.WithFields(log.Fields{
 			"eid":   message.EndpointID,
 			"error": err,
@@ -226,8 +236,8 @@ func (agent *UNIXAgent) handleRegisterUnregister(message *RegisterUnregister, re
 	}
 	if err != nil {
 		failure = true
-		reply.Success = false
-		reply.Error = err.Error()
+		response.Success = false
+		response.Error = err.Error()
 		log.WithFields(log.Fields{
 			"eid":   message.EndpointID,
 			"error": err,
@@ -235,19 +245,19 @@ func (agent *UNIXAgent) handleRegisterUnregister(message *RegisterUnregister, re
 	}
 
 	log.Debug("Marshaling response")
-	replyBytes, err := msgpack.Marshal(&reply)
+	responseBytes, err := msgpack.Marshal(&response)
 	if err != nil {
 		log.WithField("error", err).Error("Response marshaling error")
 		return nil, err
 	}
 
-	return replyBytes, nil
+	return responseBytes, nil
 }
 
-func (agent *UNIXAgent) handleBundleCreate(message *BundleCreate) ([]byte, error) {
+func (agent *UNIXAgent) handleBundleCreate(message *BundleCreateMessage) ([]byte, error) {
 	log.Debug("Handling bundle create")
 
-	reply := GeneralResponse{
+	response := GeneralResponse{
 		Message: Message{Type: MsgTypeGeneralResponse},
 		Success: true,
 		Error:   "",
@@ -258,8 +268,8 @@ func (agent *UNIXAgent) handleBundleCreate(message *BundleCreate) ([]byte, error
 	if err != nil {
 		log.WithField("error", err).Debug("Error building bundle")
 		failed = true
-		reply.Success = false
-		reply.Error = err.Error()
+		response.Success = false
+		response.Error = err.Error()
 	}
 
 	if !failed {
@@ -268,11 +278,77 @@ func (agent *UNIXAgent) handleBundleCreate(message *BundleCreate) ([]byte, error
 	}
 
 	log.Debug("Marshaling response")
-	replyBytes, err := msgpack.Marshal(&reply)
+	responseBytes, err := msgpack.Marshal(&response)
 	if err != nil {
 		log.WithField("error", err).Error("Response marshaling error")
 		return nil, err
 	}
 
-	return replyBytes, nil
+	return responseBytes, nil
+}
+
+func (agent *UNIXAgent) handleMailboxList(message *MailboxListMessage) ([]byte, error) {
+	log.Debug("Handling mailbox list")
+
+	response := MailboxListResponse{
+		GeneralResponse: GeneralResponse{
+			Message: Message{Type: MsgTypeListResponse},
+			Success: true,
+			Error:   "",
+		},
+		Bundles: make([]string, 0),
+	}
+
+	failure := false
+	eid, err := bpv7.NewEndpointID(message.Mailbox)
+	if err != nil {
+		failure = true
+		response.GeneralResponse.Success = false
+		response.GeneralResponse.Error = err.Error()
+		log.WithFields(log.Fields{
+			"eid":   message.Mailbox,
+			"error": err,
+		}).Debug("Error parsing EndpointID")
+	}
+
+	var mailbox *application_agent.Mailbox
+	if !failure {
+		mailbox, err = agent.mailboxes.GetMailbox(eid)
+		if err != nil {
+			failure = true
+			response.GeneralResponse.Success = false
+			response.GeneralResponse.Error = err.Error()
+			log.WithFields(log.Fields{
+				"eid":   message.Mailbox,
+				"error": err,
+			}).Debug("Error getting mailbox")
+		}
+	}
+
+	if !failure {
+		var bundles []bpv7.BundleID
+		if message.New {
+			bundles = mailbox.ListNew()
+		} else {
+			bundles = mailbox.List()
+		}
+		bundlesStr := make([]string, len(bundles))
+		for i := range bundles {
+			bundlesStr[i] = bundles[i].String()
+		}
+		response.Bundles = bundlesStr
+		log.WithFields(log.Fields{
+			"eid":     message.Mailbox,
+			"bundles": bundlesStr,
+		}).Debug("Got list of bundles")
+	}
+
+	log.Debug("Marshaling response")
+	responseBytes, err := msgpack.Marshal(&response)
+	if err != nil {
+		log.WithField("error", err).Error("Response marshaling error")
+		return nil, err
+	}
+
+	return responseBytes, nil
 }

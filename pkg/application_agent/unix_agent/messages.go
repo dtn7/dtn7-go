@@ -11,6 +11,8 @@ const (
 	MsgTypeRegisterEID     MessageType = 2
 	MsgTypeUnregisterEID   MessageType = 3
 	MsgTypeBundleCreate    MessageType = 4
+	MsgTypeList            MessageType = 5
+	MsgTypeListResponse    MessageType = 6
 )
 
 type Message struct {
@@ -23,12 +25,23 @@ type GeneralResponse struct {
 	Error   string
 }
 
-type RegisterUnregister struct {
+type RegisterUnregisterMessage struct {
 	Message
 	EndpointID string
 }
 
-type BundleCreate struct {
+type BundleCreateMessage struct {
 	Message
 	Args map[string]interface{}
+}
+
+type MailboxListMessage struct {
+	Message
+	Mailbox string
+	New     bool
+}
+
+type MailboxListResponse struct {
+	GeneralResponse
+	Bundles []string
 }
