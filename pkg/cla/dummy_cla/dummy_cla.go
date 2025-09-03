@@ -1,3 +1,8 @@
+// SPDX-FileCopyrightText: 2025 Markus Sommer
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Package dummy_cla provides a simple implementation of the CLA interface used for testing.
 package dummy_cla
 
 import (

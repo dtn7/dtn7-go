@@ -1,3 +1,10 @@
+// Package application_agent contains all application agents as well as the agent Manager.
+// An application agent is any interface which allows users/applications to interact with the bundle node.
+// The ApplicationAgent specifies which methods an application agent has to provide.
+// Agents can be registered via the Manager's `Register` method.
+// An agent can send bundles via the Manager's `Send` method
+// Since there should only be a single agent Manager active at any time, this package employs the singleton pattern.
+// Use `InitialiseApplicationAgentManager` and `GetManagerSingleton.`
 package application_agent
 
 import (

@@ -1,3 +1,14 @@
+// SPDX-FileCopyrightText: 2023, 2024 Markus Sommer
+// SPDX-FileCopyrightText: 2023, 2024 Artur Sterz
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Package store implements on-disk persistence for bundle's and their metadata
+// Uses Badgerhold (github.com/timshannon/badgerhold) for persisting metadata.
+// Bundles are stored in CBOR-serialized form on-disk.
+//
+// Since there should only be a single BundleStore active at any time, this package employs the singleton pattern.
+// Use `InitialiseStore` and `GetStoreSingleton.`
 package store
 
 import (

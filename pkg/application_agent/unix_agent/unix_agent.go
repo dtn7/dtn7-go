@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+// Package unix_agent provides an ApplicationAgent which communicates via a UNIX socket.
 package unix_agent
 
 import (

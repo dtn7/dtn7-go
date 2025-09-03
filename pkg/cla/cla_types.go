@@ -17,15 +17,17 @@ import (
 type CLAType uint
 
 const (
-	// Delay-Tolerant Networking TCP Convergence Layer Protocol Version 4
-	// As specified in RFC9174: https://datatracker.ietf.org/doc/html/rfc9174
+	// TCPCLv4 is the "TCP Convergence Layer Protocol Version 4",
+	// as specified in RFC9174: https://datatracker.ietf.org/doc/html/rfc9174
 	TCPCLv4 CLAType = 0
 
-	// There originally existed an RFC draft for a "Minimal TCP Convergence Layer",
-	// but this has expired and not seen any activity in a long time... so not sure where we stand there
+	// MTCP is the "Minimal TCP Convergence Layer"
+	// There originally existed an RFC draft but this has expired and not seen any activity in a long time...
+	// so not sure where we stand there
 	// https://datatracker.ietf.org/doc/html/draft-ietf-dtn-mtcpcl-01
 	MTCP CLAType = 10
 
+	// QUICL is the "QUIC Convergence Layer", as described in https://doi.org/10.1016/j.comcom.2025.108247
 	QUICL CLAType = 20
 
 	// Dummy CLA used for testing

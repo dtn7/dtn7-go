@@ -3,6 +3,18 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
+// Package id_keeper provides the IdKeeper.
+// A (non-fragment) bundle's id consists of 2 parts:
+// 1. The sending node's EndpointID
+// 2. A two-part `timestamp`
+//
+// The timestamp's first part is the time of create (in millisecond precision),
+// while the second part is a counter which allows for multiple bundles to be created in the same millisecond.
+//
+// The IdKeeper is responsible for tracking the setting the id of newly-created bundle and ensuring that they are unique.
+//
+// Since there should only be a single IdKeeper active at any time, this package employs the singleton pattern.
+// Use `InitializeIdKeeper` and `GetIdKeeperSingleton.`
 package id_keeper
 
 import (

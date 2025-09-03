@@ -1,3 +1,11 @@
+// SPDX-FileCopyrightText: 2023, 2025 Markus Sommer
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Package routing provides and interface & implementations for routing algorithms.
+//
+// Since there should only be a single Algorithm active at any time, this package employs the singleton pattern.
+// Use `InitialiseAlgorithm` and `GetAlgorithmSingleton.`
 package routing
 
 import (
@@ -12,7 +20,7 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/util"
 )
 
-type AlgorithmEnum int
+type AlgorithmEnum uint32
 
 const (
 	Epidemic AlgorithmEnum = iota

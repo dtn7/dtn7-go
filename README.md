@@ -41,7 +41,7 @@ The features and configuration are described inside the provided example [`confi
 
 #### Application Agents
 We provide different interfaces to allow communication from external programs with `dtnd`.
-A REST API, a WebSocket API, and an API based on UNIX domain sockets.
+A REST API and an API based on UNIX domain sockets.
 
 The REST API allows a client to register itself with an address, receive bundles and create/dispatch new ones simply by POSTing JSON objects to `dtnd`'s RESTful HTTP server.
 The endpoints and structure of the JSON objects are described in the [documentation](https://pkg.go.dev/github.com/dtn7/dtn7-go) for the `github.com/dtn7/dtn7-go/agent.RestAgent` type.

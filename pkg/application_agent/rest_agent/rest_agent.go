@@ -3,25 +3,7 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package rest_agent
-
-import (
-	"crypto/rand"
-	"encoding/json"
-	"fmt"
-	"net/http"
-	"sync"
-	"time"
-
-	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
-
-	"github.com/dtn7/dtn7-go/pkg/application_agent"
-	"github.com/dtn7/dtn7-go/pkg/bpv7"
-	"github.com/dtn7/dtn7-go/pkg/store"
-)
-
-// RestAgent is a RESTful Application Agent for simple bundle dispatching.
+// Package rest_agent provides a RESTful Application Agent for simple bundle dispatching.
 //
 // A client must register itself for some endpoint ID at first. After that, bundles sent to this endpoint can be
 // retrieved or new bundles can be sent. For sending, bundles can be created by calling the BundleBuilder. Finally,
@@ -72,6 +54,24 @@ import (
 //	// 4. Unregister the client, POST to /unregister
 //	// -> {"uuid":"75be76e2-23fc-da0e-eeb8-4773f84a9d2f"}
 //	// <- {"error":""}
+package rest_agent
+
+import (
+	"crypto/rand"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"sync"
+	"time"
+
+	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/dtn7/dtn7-go/pkg/application_agent"
+	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/pkg/store"
+)
+
 type RestAgent struct {
 	router        *mux.Router
 	listenAddress string
@@ -82,7 +82,6 @@ type RestAgent struct {
 	mailboxMutex sync.Mutex
 }
 
-// NewRestAgent creates a new RESTful Application Agent.
 func NewRestAgent(prefix, listenAddress string) (ra *RestAgent) {
 	r := mux.NewRouter()
 	restRouter := r.PathPrefix(prefix).Subrouter()
@@ -117,7 +116,7 @@ func (ra *RestAgent) Shutdown() {
 
 }
 
-// Deliver checks incoming BundleMessages and puts them inbox.
+// Deliver checks incoming BundleMessages and puts them in a mailbox.
 func (ra *RestAgent) Deliver(bundleDescriptor *store.BundleDescriptor) error {
 	var uuids []string
 	ra.clients.Range(func(k, v interface{}) bool {

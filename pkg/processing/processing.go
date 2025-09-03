@@ -1,3 +1,10 @@
+// SPDX-FileCopyrightText: 2023, 2024, 2025 Markus Sommer
+// SPDX-FileCopyrightText: 2023, 2024 Artur Sterz
+//
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+// Package processing implements the "Bundle Processing" steps from bpv7
+// See: https://www.rfc-editor.org/rfc/rfc9171.html#name-bundle-processing
 package processing
 
 import (
