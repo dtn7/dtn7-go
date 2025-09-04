@@ -124,11 +124,11 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 		return
 	}
 
-	log.Debug("Unmarshaling message")
+	log.Debug("Unmarshalling message")
 	message := Message{}
 	err = msgpack.Unmarshal(msgBytes, &message)
 	if err != nil {
-		log.WithField("error", err).Error("Failed unmarshaling message")
+		log.WithField("error", err).Error("Failed unmarshalling message")
 		return
 	}
 	log.WithField("type", message.Type).Debug("Received message")
@@ -139,21 +139,21 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 		typedMessage := RegisterUnregisterMessage{}
 		err = msgpack.Unmarshal(msgBytes, &typedMessage)
 		if err != nil {
-			log.WithField("error", err).Error("Failed unmarshaling Bundle create message")
+			log.WithField("error", err).Error("Failed unmarshalling (un)register message")
 			return
 		}
 
 		replyBytes, err = agent.handleRegisterUnregister(&typedMessage, typedMessage.Message.Type == MsgTypeRegisterEID)
 
 		if err != nil {
-			log.WithField("error", err).Error("Error handling Bundle create message")
+			log.WithField("error", err).Error("Error handling (un)register message")
 			return
 		}
 	case MsgTypeBundleCreate:
 		typedMessage := BundleCreateMessage{}
 		err = msgpack.Unmarshal(msgBytes, &typedMessage)
 		if err != nil {
-			log.WithField("error", err).Error("Failed unmarshaling Bundle create message")
+			log.WithField("error", err).Error("Failed unmarshalling Bundle create message")
 			return
 		}
 		replyBytes, err = agent.handleBundleCreate(&typedMessage)
@@ -165,7 +165,7 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 		typedMessage := MailboxListMessage{}
 		err = msgpack.Unmarshal(msgBytes, &typedMessage)
 		if err != nil {
-			log.WithField("error", err).Error("Failed unmarshaling list message")
+			log.WithField("error", err).Error("Failed unmarshalling list message")
 			return
 		}
 		replyBytes, err = agent.handleMailboxList(&typedMessage)
@@ -177,7 +177,7 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 		typedMessage := GetBundleMessage{}
 		err = msgpack.Unmarshal(msgBytes, &typedMessage)
 		if err != nil {
-			log.WithField("error", err).Error("Failed unmarshaling get message")
+			log.WithField("error", err).Error("Failed unmarshalling get message")
 			return
 		}
 		replyBytes, err = agent.handleGetBundle(&typedMessage)
@@ -189,12 +189,12 @@ func (agent *UNIXAgent) handleConnection(conn net.Conn) {
 		typedMessage := GetAllBundlesMessage{}
 		err = msgpack.Unmarshal(msgBytes, &typedMessage)
 		if err != nil {
-			log.WithField("error", err).Error("Failed unmarshaling getall message")
+			log.WithField("error", err).Error("Failed unmarshalling GetAll message")
 			return
 		}
 		replyBytes, err = agent.handleGetAllBundles(&typedMessage)
 		if err != nil {
-			log.WithField("error", err).Error("Error handling getall message")
+			log.WithField("error", err).Error("Error handling GetAll message")
 			return
 		}
 	default:
