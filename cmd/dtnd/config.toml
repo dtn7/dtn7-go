@@ -14,7 +14,8 @@ algorithm = "epidemic"
 address = "localhost:8080"
 
 [Agents.UNIX]
-address = "/tmp/dtnd.socket"
+# path to the communication socket
+socket = "/tmp/dtnd.socket"
 
 [[Listener]]
 type = "QUICL"

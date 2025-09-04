@@ -80,7 +80,7 @@ type agentsRESTConfig struct {
 }
 
 type agentsUNIXConfig struct {
-	Address string
+	Socket string
 }
 
 type cronConfig struct {

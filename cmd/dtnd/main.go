@@ -125,19 +125,23 @@ func main() {
 	}
 	defer application_agent.GetManagerSingleton().Shutdown()
 
-	restAgent := rest_agent.NewRestAgent("/rest", conf.Agents.REST.Address)
-	err = application_agent.GetManagerSingleton().RegisterAgent(restAgent)
-	if err != nil {
-		log.WithError(err).Fatal("Error registering REST application agent")
+	if conf.Agents.REST.Address != "" {
+		restAgent := rest_agent.NewRestAgent("/rest", conf.Agents.REST.Address)
+		err = application_agent.GetManagerSingleton().RegisterAgent(restAgent)
+		if err != nil {
+			log.WithError(err).Fatal("Error registering REST application agent")
+		}
 	}
 
-	unixAgent, err := unix_agent.NewUNIXAgent(conf.Agents.UNIX.Address)
-	if err != nil {
-		log.WithError(err).Fatal("Error creating UNIX application agent")
-	}
-	err = application_agent.GetManagerSingleton().RegisterAgent(unixAgent)
-	if err != nil {
-		log.WithError(err).Fatal("Error registering UNIX application agent")
+	if conf.Agents.UNIX.Socket != "" {
+		unixAgent, err := unix_agent.NewUNIXAgent(conf.Agents.UNIX.Socket)
+		if err != nil {
+			log.WithError(err).Fatal("Error creating UNIX application agent")
+		}
+		err = application_agent.GetManagerSingleton().RegisterAgent(unixAgent)
+		if err != nil {
+			log.WithError(err).Fatal("Error registering UNIX application agent")
+		}
 	}
 
 	// wait for SIGINT or SIGTERM
