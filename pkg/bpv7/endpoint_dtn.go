@@ -19,12 +19,12 @@ const (
 	DtnEndpointDtnNone    = "dtn:none"
 	DtnEndpointDtnNoneSsp = "none"
 
-	DtnEndpointRegexpSsp     = `//([\w-._]+)/(.*)`
+	DtnEndpointRegexpSsp     = `//((^$)|([\w-._~!$&'()*+,;=]+))/(.*)`
 	DtnEndpointRegexpFull    = "^" + DtnEndpointSchemeName + ":(none|" + DtnEndpointRegexpSsp + ")$"
 	DtnEndpointRegexpNotNone = "^" + DtnEndpointSchemeName + ":(" + DtnEndpointRegexpSsp + ")$"
 )
 
-// DtnEndpoint describes the dtn URI for EndpointIDs, as defined in ietf-dtn-bpbis.
+// DtnEndpoint describes the dtn URI for EndpointIDs, as defined in RFC 9171.
 //
 //	Format of a "normal" dtn URI:
 //	"dtn:" "//" NodeName "/" Demux
@@ -42,7 +42,7 @@ type DtnEndpoint struct {
 
 // parseDtnSsp tries to parse a "dtn" URI's scheme specific part (SSP) and return the URI's parts.
 func parseDtnSsp(ssp string) (nodeName, demux string, isDtnNone bool, err error) {
-	// As defined in dtn-bpbis, a "dtn" URI might be the null endpoint "dtn:none" or something URI/IRI like.
+	// As defined in RFC 9171, a "dtn" URI might be the null endpoint "dtn:none" or something URI/IRI like.
 	// Thus, at first we are going after the null endpoint and inspect a more generic URI afterwards.
 
 	if ssp == DtnEndpointDtnNoneSsp {
@@ -56,21 +56,12 @@ func parseDtnSsp(ssp string) (nodeName, demux string, isDtnNone bool, err error)
 		return
 	}
 
-	switch submatches := re.FindStringSubmatch(ssp); len(submatches) {
-	case 2:
-		nodeName = submatches[1]
-		demux = ""
-		return
+	ssp = ssp[2:]
 
-	case 3:
-		nodeName = submatches[1]
-		demux = submatches[2]
-		return
-
-	default:
-		err = fmt.Errorf("invalid amount of submatches: %d", len(submatches))
-		return
-	}
+	parts := strings.SplitN(ssp, "/", 2)
+	nodeName = parts[0]
+	demux = parts[1]
+	return
 }
 
 // NewDtnEndpoint from an URI with the dtn scheme.
@@ -135,8 +126,12 @@ func (e DtnEndpoint) IsSingleton() bool {
 
 // CheckValid returns an error for incorrect data.
 func (e DtnEndpoint) CheckValid() (err error) {
-	if !regexp.MustCompile(DtnEndpointRegexpFull).MatchString(e.String()) {
-		err = fmt.Errorf("dtn URI does not match regexp")
+	if e.IsDtnNone {
+		return
+	}
+	ssp := fmt.Sprintf("//%v/%v", e.NodeName, e.Demux)
+	if !regexp.MustCompile(DtnEndpointRegexpSsp).MatchString(ssp) {
+		err = fmt.Errorf("malformed ssp: %v", ssp)
 	}
 	return
 }
