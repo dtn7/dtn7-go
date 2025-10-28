@@ -24,8 +24,7 @@ func main() {
 	parser.ExitOnHelp(true)
 	address := parser.String("a", "address", &argparse.Options{
 		Help:     "UNIX socket",
-		Required: false,
-		Default:  "/tmp/dtnd.socket",
+		Required: true,
 	})
 
 	register := parser.NewCommand("register", "Register EndpointID")
