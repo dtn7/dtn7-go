@@ -55,10 +55,14 @@ func main() {
 	}
 
 	// Setup routing
-	err = routing.InitialiseAlgorithm(conf.Routing.Algorithm)
-	if err != nil {
-		log.WithField("error", err).Fatal("Error initialising routing algorithm")
+	var routingAlgorithm routing.Algorithm = nil
+	switch conf.Routing.Algorithm {
+	case routing.Epidemic:
+		routingAlgorithm = routing.NewEpidemicRouting()
+	default:
+		log.WithField("algorithm type", conf.Routing.Algorithm).Fatal("Unknown routing algorithm")
 	}
+	routing.InitialiseAlgorithm(routingAlgorithm)
 
 	// Setup CLAs
 	err = cla.InitialiseCLAManager(processing.ReceiveBundle, processing.NewPeer, routing.GetAlgorithmSingleton().NotifyPeerDisappeared)

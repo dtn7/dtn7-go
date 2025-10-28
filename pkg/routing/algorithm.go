@@ -17,13 +17,12 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla"
 	"github.com/dtn7/dtn7-go/pkg/store"
-	"github.com/dtn7/dtn7-go/pkg/util"
 )
 
 type AlgorithmEnum uint32
 
 const (
-	Epidemic AlgorithmEnum = iota
+	Epidemic AlgorithmEnum = 1
 )
 
 func AlgorithmEnumFromString(name string) (AlgorithmEnum, error) {
@@ -56,35 +55,22 @@ type Algorithm interface {
 
 var algorithmSingleton Algorithm
 
-type NoSuchAlgorithmError AlgorithmEnum
-
-func (err *NoSuchAlgorithmError) Error() string {
-	return fmt.Sprintf("%d was already initialised", *err)
-}
-
-func NewNoSuchAlgorithmError(algorithm AlgorithmEnum) *NoSuchAlgorithmError {
-	err := NoSuchAlgorithmError(algorithm)
-	return &err
-}
-
-func InitialiseAlgorithm(algorithm AlgorithmEnum) error {
+func InitialiseAlgorithm(algorithm Algorithm) {
 	if algorithmSingleton != nil {
-		return util.NewAlreadyInitialisedError("Routing Algorithm")
+		log.Fatalf("Attempting to initialise an already initialised algorithm. This must never happen!")
+	}
+	if algorithm == nil {
+		log.Fatalf("Attempting to initialise algorithm with nil. This must never happen!")
 	}
 
-	if algorithm == Epidemic {
-		algorithmSingleton = NewEpidemicRouting()
-		return nil
-	}
-
-	return NewNoSuchAlgorithmError(algorithm)
+	algorithmSingleton = algorithm
 }
 
 // GetAlgorithmSingleton returns the routing algorithm singleton-instance.
 // Attempting to call this function before algorithm initialisation will cause the program to panic.
 func GetAlgorithmSingleton() Algorithm {
 	if algorithmSingleton == nil {
-		log.Fatalf("Attempting to access an uninitialised manager. This must never happen!")
+		log.Fatalf("Attempting to access an uninitialised algorithm. This must never happen!")
 	}
 	return algorithmSingleton
 }
