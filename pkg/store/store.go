@@ -26,7 +26,6 @@ import (
 	"github.com/dtn7/cboring"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
-	"github.com/dtn7/dtn7-go/pkg/util"
 )
 
 type BundleStore struct {
@@ -39,10 +38,10 @@ var storeSingleton *BundleStore
 
 // InitialiseStore initialises the store singleton
 // To access Singleton-instance, use GetStoreSingleton
-// Further calls to this function after initialisation will return a util.AlreadyInitialised-error
+// Further calls to this function after initialisation will panic.
 func InitialiseStore(nodeID bpv7.EndpointID, path string) error {
 	if storeSingleton != nil {
-		return util.NewAlreadyInitialisedError("BundleStore")
+		log.Fatalf("Attempting to access an uninitialised store. This must never happen!")
 	}
 
 	opts := badgerhold.DefaultOptions

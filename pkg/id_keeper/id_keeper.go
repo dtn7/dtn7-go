@@ -23,7 +23,6 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
-	"github.com/dtn7/dtn7-go/pkg/util"
 )
 
 // idTuple is a tuple struct for looking up a bundle's ID - based on its source
@@ -50,16 +49,14 @@ type IdKeeper struct {
 	mutex sync.Mutex
 }
 
-func InitializeIdKeeper() error {
+func InitializeIdKeeper() {
 	if idKeeperSingleton != nil {
-		return util.NewAlreadyInitialisedError("IdKeeper")
+		log.Fatalf("Attempting to access an uninitialised IdKeeper. This must never happen!")
 	}
 
 	idKeeperSingleton = &IdKeeper{
 		data: make(map[idTuple]uint64),
 	}
-
-	return nil
 }
 
 func GetIdKeeperSingleton() *IdKeeper {

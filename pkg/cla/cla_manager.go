@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
-	"github.com/dtn7/dtn7-go/pkg/util"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -42,10 +41,10 @@ var managerSingleton *Manager
 
 // InitialiseCLAManager initialises the manager-singleton
 // To access Singleton-instance, use GetManagerSingleton
-// Further calls to this function after initialisation will return a util.AlreadyInitialised-error
-func InitialiseCLAManager(receiveCallback func(bundle *bpv7.Bundle), connectCallback func(eid bpv7.EndpointID), disconnectCallback func(eid bpv7.EndpointID)) error {
+// Further calls to this function after initialisation will panic.
+func InitialiseCLAManager(receiveCallback func(bundle *bpv7.Bundle), connectCallback func(eid bpv7.EndpointID), disconnectCallback func(eid bpv7.EndpointID)) {
 	if managerSingleton != nil {
-		return util.NewAlreadyInitialisedError("CLA Manager")
+		log.Fatalf("Attempting to access an uninitialised CLA manager. This must never happen!")
 	}
 
 	manager := Manager{
@@ -59,7 +58,6 @@ func InitialiseCLAManager(receiveCallback func(bundle *bpv7.Bundle), connectCall
 		pendingRemoval:     make(map[string]bool),
 	}
 	managerSingleton = &manager
-	return nil
 }
 
 // GetManagerSingleton returns the manager singleton-instance.

@@ -17,7 +17,6 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/cla"
 	"github.com/dtn7/dtn7-go/pkg/cla/mtcp"
 	"github.com/dtn7/dtn7-go/pkg/cla/quicl"
-	"github.com/dtn7/dtn7-go/pkg/util"
 )
 
 const (
@@ -47,9 +46,8 @@ func InitialiseManager(
 	announcements []Announcement, announcementInterval time.Duration,
 	ipv4, ipv6 bool,
 	receiveCallback func(*bpv7.Bundle)) error {
-
 	if managerSingleton != nil {
-		return util.NewAlreadyInitialisedError("Discovery Manager")
+		log.Fatalf("Attempting to access an uninitialised discovery manager. This must never happen!")
 	}
 
 	var manager = &Manager{

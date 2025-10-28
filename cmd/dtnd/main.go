@@ -49,10 +49,7 @@ func main() {
 	defer store.GetStoreSingleton().Close()
 
 	// Setup IdKeeper
-	err = id_keeper.InitializeIdKeeper()
-	if err != nil {
-		log.WithField("error", err).Fatal("Error initialising IdKeeper")
-	}
+	id_keeper.InitializeIdKeeper()
 
 	// Setup routing
 	var routingAlgorithm routing.Algorithm = nil
@@ -65,10 +62,7 @@ func main() {
 	routing.InitialiseAlgorithm(routingAlgorithm)
 
 	// Setup CLAs
-	err = cla.InitialiseCLAManager(processing.ReceiveBundle, processing.NewPeer, routing.GetAlgorithmSingleton().NotifyPeerDisappeared)
-	if err != nil {
-		log.WithField("error", err).Fatal("Error initialising CLAs")
-	}
+	cla.InitialiseCLAManager(processing.ReceiveBundle, processing.NewPeer, routing.GetAlgorithmSingleton().NotifyPeerDisappeared)
 	defer cla.GetManagerSingleton().Shutdown()
 
 	for _, lstConf := range conf.Listener {
