@@ -79,3 +79,33 @@ Installing Go via [homebrew](https://brew.sh), should solve permission errors wh
 ## License
 
 This project's code is licensed under the [GNU General Public License version 3 (_GPL-3.0-or-later_)](LICENSE).
+
+## Acknowledging this work
+
+If you use this software in a scientific publication, please cite the following papers:
+
+```BibTeX
+@inproceedings{penning2019dtn,
+	title        = {DTN7: An Open-Source Disruption-Tolerant Networking Implementation of Bundle Protocol 7},
+	author       = {Penning, Alvar and Baumgärtner, Lars and Höchst, Jonas and Sterz, Artur and Mezini, Mira and Freisleben, Bernd},
+	year         = 2019,
+	booktitle    = {Ad-Hoc, Mobile, and Wireless Networks},
+	publisher    = {Springer International Publishing},
+	address      = {Cham},
+	pages        = {196--209},
+	isbn         = {978-3-030-31831-4},
+	editor       = {Palattella, Maria Rita and Scanzio, Stefano and Coleri Ergen, Sinem},
+}
+@article{sommer2025quicl,
+	title        = {QUICL: Disruption-tolerant networking via a QUIC convergence layer},
+	author       = {Markus Sommer and Artur Sterz and Markus Vogelbacher and Hicham Bellafkir and Bernd Freisleben},
+	year         = 2025,
+	journal      = {Computer Communications},
+	volume       = 241,
+	pages        = 108247,
+	doi          = {https://doi.org/10.1016/j.comcom.2025.108247},
+	issn         = {0140-3664},
+	url          = {https://www.sciencedirect.com/science/article/pii/S014036642500204X},
+	keywords     = {Disruption-tolerant networks, QUIC, Go},
+}
+```
