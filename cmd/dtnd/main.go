@@ -136,6 +136,14 @@ func main() {
 			processing.DispatchPending,
 		),
 	)
+	_, err = s.NewJob(
+		gocron.DurationJob(
+			conf.Cron.GC,
+		),
+		gocron.NewTask(
+			store.GetStoreSingleton().GarbageCollect,
+		),
+	)
 	if err != nil {
 		log.WithError(err).Fatal("Error initializing dispatching cronjob")
 	}

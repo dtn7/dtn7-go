@@ -85,10 +85,12 @@ type agentsUNIXConfig struct {
 
 type cronConfig struct {
 	Dispatch time.Duration
+	GC       time.Duration
 }
 
 type cronTomlConfig struct {
 	Dispatch string
+	GC       string
 }
 
 func parseListenPort(endpoint string) (port int, err error) {
@@ -159,6 +161,11 @@ func parse(filename string) (config, error) {
 		return config{}, NewConfigError("Error parsing dispatch period", err)
 	}
 	conf.Cron.Dispatch = dispatchTime
+	gcTime, err := time.ParseDuration(tomlConf.Cron.GC)
+	if err != nil {
+		return config{}, NewConfigError("Error parsing gc period", err)
+	}
+	conf.Cron.GC = gcTime
 
 	return conf, nil
 }

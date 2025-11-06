@@ -22,4 +22,6 @@ type = "QUICL"
 address = ":35037"
 
 [Cron]
-dispatch ="10s"
+dispatch = "10s"
+# don't set the gc peroid to be an integer-multiple of the dispatch period
+gc = "15s"

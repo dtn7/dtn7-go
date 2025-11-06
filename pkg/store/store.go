@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2023, 2024 Markus Sommer
+// SPDX-FileCopyrightText: 2023, 2024, 2025 Markus Sommer
 // SPDX-FileCopyrightText: 2023, 2024 Artur Sterz
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
@@ -226,7 +226,30 @@ func (bst *BundleStore) updateBundleMetadata(bundleDescriptor *BundleDescriptor)
 }
 
 func (bst *BundleStore) DeleteBundle(bundleDescriptor *BundleDescriptor) error {
-	err := bst.metadataStore.Delete(bundleDescriptor.IDString, bundleDescriptor)
-	err = multierror.Append(os.Remove(bundleDescriptor.SerialisedFileName))
-	return err
+	var multiErr *multierror.Error
+	multiErr = multierror.Append(multiErr, bst.metadataStore.Delete(bundleDescriptor.IDString, bundleDescriptor))
+	serialisedPath := filepath.Join(bst.bundleDirectory, bundleDescriptor.SerialisedFileName)
+	multiErr = multierror.Append(multiErr, os.Remove(serialisedPath))
+	return multiErr.ErrorOrNil()
+}
+
+func (bst *BundleStore) GarbageCollect() {
+	log.Debug("Garbage collecting store")
+
+	now := time.Now()
+
+	bundles := make([]BundleDescriptor, 0)
+	err := bst.metadataStore.Find(&bundles, badgerhold.Where("Expires").Lt(now).And("Retain").Eq(false))
+	if err != nil {
+		log.WithField("error", err).Error("Error getting bundles for gc")
+		return
+	}
+	log.WithField("bundles", bundles).Debug("Bundles ready for deletion")
+
+	for _, bndl := range bundles {
+		err = bst.DeleteBundle(&bndl)
+		if err != nil {
+			log.WithField("error", err).Error("Error deleting bundle")
+		}
+	}
 }
