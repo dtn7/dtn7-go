@@ -1,4 +1,5 @@
 // SPDX-FileCopyrightText: 2019, 2020 Alvar Penning
+// SPDX-FileCopyrightText: 2025 Markus Sommer
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
@@ -7,18 +8,18 @@ package store
 import "fmt"
 
 // Constraint is a retention constraint as defined in the subsections RFC9171 Section 5.
-type Constraint int
+type Constraint uint8
 
 const (
 	// DispatchPending is assigned to a bundle if its dispatching is pending.
-	DispatchPending Constraint = iota
+	DispatchPending Constraint = 0
 
 	// ForwardPending is assigned to a bundle if its forwarding is pending.
-	ForwardPending Constraint = iota
+	ForwardPending Constraint = 1
 
 	// ReassemblyPending is assigned to a fragmented bundle if it is being reassembled.
 	// Constraint will be removed once all fragments have been received and the bundle has been reassembled.
-	ReassemblyPending Constraint = iota
+	ReassemblyPending Constraint = 2
 )
 
 func (c Constraint) String() string {
@@ -39,7 +40,7 @@ func (c Constraint) String() string {
 
 // Valid checks if this is a "valid" constraint, that is known to this software
 func (c Constraint) Valid() bool {
-	return c >= DispatchPending && c <= ReassemblyPending
+	return c <= ReassemblyPending
 }
 
 type InvalidConstraint Constraint
