@@ -10,14 +10,14 @@ import "fmt"
 type Constraint int
 
 const (
-	// DispatchPending is assigned to a bpv7 if its dispatching is pending.
+	// DispatchPending is assigned to a bundle if its dispatching is pending.
 	DispatchPending Constraint = iota
 
 	// ForwardPending is assigned to a bundle if its forwarding is pending.
 	ForwardPending Constraint = iota
 
-	// ReassemblyPending is assigned to a fragmented bundle if its reassembly is
-	// pending.
+	// ReassemblyPending is assigned to a fragmented bundle if it is being reassembled.
+	// Constraint will be removed once all fragments have been received and the bundle has been reassembled.
 	ReassemblyPending Constraint = iota
 )
 
@@ -37,6 +37,7 @@ func (c Constraint) String() string {
 	}
 }
 
+// Valid checks if this is a "valid" constraint, that is known to this software
 func (c Constraint) Valid() bool {
 	return c >= DispatchPending && c <= ReassemblyPending
 }

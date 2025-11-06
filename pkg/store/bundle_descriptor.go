@@ -16,10 +16,11 @@ type BundleDescriptor struct {
 
 	Bundle *bpv7.Bundle
 
-	// node IDs of peers which already have this bundle
+	// Node IDs of peers which already have this bundle
+	// By tracking these, we can avoid wasting bandwidth by sending bundles to nodes which already have them.
 	AlreadySentTo []bpv7.EndpointID
 
-	// RetentionConstraints as defined by RFC9171 Section 5, see constraints.go for possible types
+	// RetentionConstraints as defined by RFC9171 Section 5, see constraints.go for possible values
 	RetentionConstraints []Constraint
 	// bundle's ID in string-form. Used as the database primary-key. Return-value of ID.String()
 	IDString string `badgerhold:"key"`
@@ -34,6 +35,10 @@ type BundleDescriptor struct {
 	SerialisedFileName string
 }
 
+// Load loads the entire bundle from disk
+// Since bundles can be rather arbitrarily large, this can be very expensive and should only be done when necessary.
+// Once a bundle has been loaded, it is stored in the BundleDescriptor's "Bundle" field,
+// so further calls should be a lot faster.
 func (bd *BundleDescriptor) Load() (*bpv7.Bundle, error) {
 	if bd.Bundle != nil {
 		return bd.Bundle, nil
@@ -42,15 +47,19 @@ func (bd *BundleDescriptor) Load() (*bpv7.Bundle, error) {
 	if err != nil {
 		return nil, err
 	}
+	// TODO: make caching optional to conserve memory
 	bd.Bundle = bndle
 	return bndle, nil
 }
 
+// GetAlreadySent gets the list of EndpointIDs which we know to already have received the bundle.
 func (bd *BundleDescriptor) GetAlreadySent() []bpv7.EndpointID {
 	// TODO: refresh current state from db
+	// TODO: give better name, since we might also know from receiving the bundle from someone else
 	return bd.AlreadySentTo
 }
 
+// AddAlreadySent adds EndpointIDs to this bundle's list of known recipients.
 func (bd *BundleDescriptor) AddAlreadySent(peers ...bpv7.EndpointID) {
 	bd.AlreadySentTo = append(bd.AlreadySentTo, peers...)
 	err := GetStoreSingleton().updateBundleMetadata(bd)
@@ -67,6 +76,8 @@ func (bd *BundleDescriptor) AddAlreadySent(peers ...bpv7.EndpointID) {
 	}
 }
 
+// AddConstraint adds a Constraint to this bundle and checks if it should be retained/dispatched.
+// Changes are synced to disk.
 func (bd *BundleDescriptor) AddConstraint(constraint Constraint) error {
 	// check if value is valid constraint
 	if constraint < DispatchPending || constraint > ReassemblyPending {
@@ -79,6 +90,8 @@ func (bd *BundleDescriptor) AddConstraint(constraint Constraint) error {
 	return GetStoreSingleton().updateBundleMetadata(bd)
 }
 
+// RemoveConstraint removes a Constraint from this bundle and checks if it should be retained/dispatched.
+// Changes are synced to disk.
 func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) error {
 	constraints := make([]Constraint, 0, len(bd.RetentionConstraints))
 	for _, existingConstraint := range bd.RetentionConstraints {
@@ -92,6 +105,8 @@ func (bd *BundleDescriptor) RemoveConstraint(constraint Constraint) error {
 	return GetStoreSingleton().updateBundleMetadata(bd)
 }
 
+// ResetConstraints removes all Constraints from this bundle.
+// Changes are synced to disk.
 func (bd *BundleDescriptor) ResetConstraints() error {
 	bd.RetentionConstraints = make([]Constraint, 0)
 	bd.Retain = false

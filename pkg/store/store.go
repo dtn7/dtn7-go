@@ -3,12 +3,12 @@
 //
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Package store implements on-disk persistence for bundle's and their metadata
+// Package store implements on-disk persistence for bundles and their metadata
 // Uses Badgerhold (github.com/timshannon/badgerhold) for persisting metadata.
 // Bundles are stored in CBOR-serialized form on-disk.
 //
 // Since there should only be a single BundleStore active at any time, this package employs the singleton pattern.
-// Use `InitialiseStore` and `GetStoreSingleton.`
+// Use InitialiseStore and GetStoreSingleton.
 package store
 
 import (
@@ -82,6 +82,9 @@ func (bst *BundleStore) Shutdown() error {
 	return err
 }
 
+// LoadBundleDescriptor attempts to load the BundleDescriptor for the provided bpv7.BundleID.
+// This only loads metadata, not tha actual bundle, thus it's relatively cheap.
+// The BundleDescriptor's "Bundle" field will be nil.
 func (bst *BundleStore) LoadBundleDescriptor(bundleId bpv7.BundleID) (*BundleDescriptor, error) {
 	idString := bundleId.String()
 	bd := BundleDescriptor{}
@@ -89,6 +92,8 @@ func (bst *BundleStore) LoadBundleDescriptor(bundleId bpv7.BundleID) (*BundleDes
 	return &bd, err
 }
 
+// GetWithConstraint loads all BundleDescriptors which have the given Constraint set.
+// For an explanation of retention constraints, see RFC9171 Section 5.
 func (bst *BundleStore) GetWithConstraint(constraint Constraint) ([]*BundleDescriptor, error) {
 	bundles := make([]BundleDescriptor, 0)
 	err := bst.metadataStore.Find(&bundles, badgerhold.Where("RetentionConstraints").Contains(constraint))
@@ -104,6 +109,8 @@ func (bst *BundleStore) GetWithConstraint(constraint Constraint) ([]*BundleDescr
 	return ptrs, nil
 }
 
+// GetDispatchable loads all BundleDescriptors which refer to currently dispatchable bundles.
+// That is bundles, which are not already in the process of being forwarded.
 func (bst *BundleStore) GetDispatchable() ([]*BundleDescriptor, error) {
 	bundles := make([]BundleDescriptor, 0)
 	err := bst.metadataStore.Find(&bundles, badgerhold.Where("Dispatch").Eq(true))
@@ -194,6 +201,13 @@ func (bst *BundleStore) insertNewBundle(bundle *bpv7.Bundle) (*BundleDescriptor,
 	return &bd, err
 }
 
+// InsertBundle inserts a bundle into the store.
+//
+// If the bundle is new, then a new BundleDescriptor wil be generated and store in the database.
+// The bundle itself will be stored in CBOR serialized form.
+//
+// If the bundle is already in the store, then we extract the bpv7.PreviousNodeBlock to see whe we received it from
+// and add them to the list of node that we know to already have this bundle.
 func (bst *BundleStore) InsertBundle(bundle *bpv7.Bundle) (*BundleDescriptor, error) {
 	bd := BundleDescriptor{}
 	err := bst.metadataStore.Get(bundle.ID().String(), &bd)
@@ -225,6 +239,8 @@ func (bst *BundleStore) updateBundleMetadata(bundleDescriptor *BundleDescriptor)
 	return err
 }
 
+// DeleteBundle deletes bundle metadata from database and the serialized bundle from disk.
+// You are responsible to check if the bundle should be retained before deleting it.
 func (bst *BundleStore) DeleteBundle(bundleDescriptor *BundleDescriptor) error {
 	var multiErr *multierror.Error
 	multiErr = multierror.Append(multiErr, bst.metadataStore.Delete(bundleDescriptor.IDString, bundleDescriptor))
@@ -233,6 +249,8 @@ func (bst *BundleStore) DeleteBundle(bundleDescriptor *BundleDescriptor) error {
 	return multiErr.ErrorOrNil()
 }
 
+// GarbageCollect deletes all bundles which are expired (their creation timestamp + lifetime is in the past)
+// and are not currently marked for retention.
 func (bst *BundleStore) GarbageCollect() {
 	log.Debug("Garbage collecting store")
 
