@@ -61,6 +61,32 @@ func main() {
 	}
 	routing.InitialiseAlgorithm(routingAlgorithm)
 
+	// Setup application agents
+	err = application_agent.InitialiseApplicationAgentManager(processing.ReceiveBundle)
+	if err != nil {
+		log.WithField("error", err).Fatal("Error initialising Application Agent Manager")
+	}
+	defer application_agent.GetManagerSingleton().Shutdown()
+
+	if conf.Agents.REST.Address != "" {
+		restAgent := rest_agent.NewRestAgent("/rest", conf.Agents.REST.Address)
+		err = application_agent.GetManagerSingleton().RegisterAgent(restAgent)
+		if err != nil {
+			log.WithError(err).Fatal("Error registering REST application agent")
+		}
+	}
+
+	if conf.Agents.UNIX.Socket != "" {
+		unixAgent, err := unix_agent.NewUNIXAgent(conf.Agents.UNIX.Socket)
+		if err != nil {
+			log.WithError(err).Fatal("Error creating UNIX application agent")
+		}
+		err = application_agent.GetManagerSingleton().RegisterAgent(unixAgent)
+		if err != nil {
+			log.WithError(err).Fatal("Error registering UNIX application agent")
+		}
+	}
+
 	// Setup CLAs
 	cla.InitialiseCLAManager(processing.ReceiveBundle, processing.NewPeer, routing.GetAlgorithmSingleton().NotifyPeerDisappeared)
 	defer cla.GetManagerSingleton().Shutdown()
@@ -116,35 +142,10 @@ func main() {
 	s.Start()
 	defer s.Shutdown()
 
-	// Setup application agents
-	err = application_agent.InitialiseApplicationAgentManager(processing.ReceiveBundle)
-	if err != nil {
-		log.WithField("error", err).Fatal("Error initialising Application Agent Manager")
-	}
-	defer application_agent.GetManagerSingleton().Shutdown()
-
-	if conf.Agents.REST.Address != "" {
-		restAgent := rest_agent.NewRestAgent("/rest", conf.Agents.REST.Address)
-		err = application_agent.GetManagerSingleton().RegisterAgent(restAgent)
-		if err != nil {
-			log.WithError(err).Fatal("Error registering REST application agent")
-		}
-	}
-
-	if conf.Agents.UNIX.Socket != "" {
-		unixAgent, err := unix_agent.NewUNIXAgent(conf.Agents.UNIX.Socket)
-		if err != nil {
-			log.WithError(err).Fatal("Error creating UNIX application agent")
-		}
-		err = application_agent.GetManagerSingleton().RegisterAgent(unixAgent)
-		if err != nil {
-			log.WithError(err).Fatal("Error registering UNIX application agent")
-		}
-	}
-
 	// wait for SIGINT or SIGTERM
 	c := make(chan os.Signal, 2)
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-	<-c
+	sig := <-c
+	log.WithField("signal", sig).Info("Received signal, shutting down.")
 	return
 }
