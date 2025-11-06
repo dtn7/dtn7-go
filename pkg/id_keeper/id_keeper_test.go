@@ -38,7 +38,7 @@ func TestIdKeeper(t *testing.T) {
 		t.Errorf("Creating bundle failed: %v", err)
 	}
 
-	_ = InitializeIdKeeper()
+	InitializeIdKeeper()
 
 	keeper := GetIdKeeperSingleton()
 

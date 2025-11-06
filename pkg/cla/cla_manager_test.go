@@ -11,15 +11,12 @@ import (
 	"pgregory.net/rapid"
 )
 
-func setup(t *rapid.T) {
+func setup() {
 	receive := func(bundle *bpv7.Bundle) {}
 	connect := func(eid bpv7.EndpointID) {}
 	disconnect := func(eid bpv7.EndpointID) {}
 
-	err := InitialiseCLAManager(receive, connect, disconnect)
-	if err != nil {
-		t.Fatal(err)
-	}
+	InitialiseCLAManager(receive, connect, disconnect)
 }
 
 func teardown() {
@@ -28,7 +25,7 @@ func teardown() {
 
 func TestRegisterListener(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		setup(t)
+		setup()
 		defer teardown()
 
 		numberOfListeners := rapid.Uint8Max(10).Draw(t, "Number of Listeners")
@@ -63,7 +60,7 @@ func TestRegisterListener(t *testing.T) {
 
 func TestRegisterSender(t *testing.T) {
 	rapid.Check(t, func(t *rapid.T) {
-		setup(t)
+		setup()
 		defer teardown()
 
 		numberOfCLAs := rapid.Uint8Max(100).Draw(t, "Number of CLAs")

@@ -36,15 +36,12 @@ func getRandomPort(t *rapid.T) int {
 	return l.LocalAddr().(*net.UDPAddr).Port
 }
 
-func setup(t *testing.T) {
+func setup() {
 	receive := func(bundle *bpv7.Bundle) {}
 	connect := func(eid bpv7.EndpointID) {}
 	disconnect := func(eid bpv7.EndpointID) {}
 
-	err := cla.InitialiseCLAManager(receive, connect, disconnect)
-	if err != nil {
-		t.Fatal(err)
-	}
+	cla.InitialiseCLAManager(receive, connect, disconnect)
 }
 
 func teardown() {
@@ -52,7 +49,7 @@ func teardown() {
 }
 
 func TestSingle(t *testing.T) {
-	setup(t)
+	setup()
 	defer teardown()
 
 	timeout, err := time.ParseDuration(testTimeout)

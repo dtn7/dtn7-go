@@ -31,7 +31,7 @@ func initMailboxTest(t *testing.T) (string, *Mailbox) {
 }
 
 func cleanupMailboxTest(t *testing.T, instanceID string) {
-	err := store.GetStoreSingleton().Close()
+	err := store.GetStoreSingleton().Shutdown()
 	if err != nil {
 		t.Fatal(err)
 	}
