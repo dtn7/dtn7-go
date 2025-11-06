@@ -46,7 +46,7 @@ func main() {
 	if err != nil {
 		log.WithField("error", err).Fatal("Error initialising store")
 	}
-	defer store.GetStoreSingleton().Close()
+	defer store.GetStoreSingleton().Shutdown()
 
 	// Setup IdKeeper
 	id_keeper.InitializeIdKeeper()
@@ -122,7 +122,7 @@ func main() {
 			"error": err,
 		}).Fatal("Error starting discovery manager")
 	}
-	defer discovery.GetManagerSingleton().Close()
+	defer discovery.GetManagerSingleton().Shutdown()
 
 	s, err := gocron.NewScheduler()
 	if err != nil {

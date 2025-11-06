@@ -40,6 +40,19 @@ func GetManagerSingleton() *Manager {
 	return managerSingleton
 }
 
+func (manager *Manager) Shutdown() {
+	managerSingleton = nil
+
+	manager.stateMutex.RLock()
+	defer manager.stateMutex.RUnlock()
+
+	for _, agent := range manager.agents {
+		agent.Shutdown()
+	}
+
+	manager.agents = make([]ApplicationAgent, 0)
+}
+
 // GetEndpoints returns a slice of all registered Endpoints on this node
 func (manager *Manager) GetEndpoints() []bpv7.EndpointID {
 	manager.stateMutex.RLock()
@@ -106,19 +119,6 @@ func (manager *Manager) Delivery(bundleDescriptor *store.BundleDescriptor) {
 			}).Debug("Error delivering bundle")
 		}
 	}
-}
-
-func (manager *Manager) Shutdown() {
-	manager.stateMutex.RLock()
-	defer manager.stateMutex.RUnlock()
-
-	for _, agent := range manager.agents {
-		agent.Shutdown()
-	}
-
-	manager.agents = make([]ApplicationAgent, 0)
-
-	managerSingleton = nil
 }
 
 func (manager *Manager) Send(bndl *bpv7.Bundle) {

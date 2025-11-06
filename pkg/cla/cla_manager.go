@@ -69,6 +69,28 @@ func GetManagerSingleton() *Manager {
 	return managerSingleton
 }
 
+func (manager *Manager) Shutdown() {
+	managerSingleton = nil
+
+	manager.stateMutex.Lock()
+	defer manager.stateMutex.Unlock()
+
+	for _, receiver := range manager.receivers {
+		go receiver.Close()
+	}
+	manager.receivers = make([]ConvergenceReceiver, 0)
+
+	for _, sender := range manager.senders {
+		go sender.Close()
+	}
+	manager.senders = make([]ConvergenceSender, 0)
+
+	for _, listener := range manager.listeners {
+		go listener.Close()
+	}
+	manager.listeners = make([]ConvergenceListener, 0)
+}
+
 // GetSenders returns the list of currently active sender-type CLAs
 // This method is thread-safe
 func (manager *Manager) GetSenders() []ConvergenceSender {
@@ -263,26 +285,4 @@ func (manager *Manager) RegisterListener(listener ConvergenceListener) error {
 	manager.listeners = append(manager.listeners, listener)
 
 	return nil
-}
-
-func (manager *Manager) Shutdown() {
-	manager.stateMutex.Lock()
-	defer manager.stateMutex.Unlock()
-
-	for _, receiver := range manager.receivers {
-		go receiver.Close()
-	}
-	manager.receivers = make([]ConvergenceReceiver, 0)
-
-	for _, sender := range manager.senders {
-		go sender.Close()
-	}
-	manager.senders = make([]ConvergenceSender, 0)
-
-	for _, listener := range manager.listeners {
-		go listener.Close()
-	}
-	manager.listeners = make([]ConvergenceListener, 0)
-
-	managerSingleton = nil
 }

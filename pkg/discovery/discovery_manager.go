@@ -132,6 +132,16 @@ func GetManagerSingleton() *Manager {
 	return managerSingleton
 }
 
+func (manager *Manager) Shutdown() {
+	managerSingleton = nil
+
+	for _, c := range []chan struct{}{manager.stopChan4, manager.stopChan6} {
+		if c != nil {
+			c <- struct{}{}
+		}
+	}
+}
+
 func (manager *Manager) notify6(discovered peerdiscovery.Discovered) {
 	discovered.Address = fmt.Sprintf("[%s]", discovered.Address)
 
@@ -177,15 +187,6 @@ func (manager *Manager) handleDiscovery(announcement Announcement, addr string) 
 		return
 	}
 	cla.GetManagerSingleton().Register(conv)
-}
-
-// Close this Manager.
-func (manager *Manager) Close() {
-	for _, c := range []chan struct{}{manager.stopChan4, manager.stopChan6} {
-		if c != nil {
-			c <- struct{}{}
-		}
-	}
 }
 
 func (manager *Manager) String() string {

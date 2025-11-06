@@ -76,9 +76,9 @@ func GetStoreSingleton() *BundleStore {
 	return storeSingleton
 }
 
-func (bst *BundleStore) Close() error {
-	err := bst.metadataStore.Close()
+func (bst *BundleStore) Shutdown() error {
 	storeSingleton = nil
+	err := bst.metadataStore.Close()
 	return err
 }
 
