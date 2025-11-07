@@ -100,6 +100,10 @@ func NewRestAgent(prefix, listenAddress string) (ra *RestAgent) {
 	return ra
 }
 
+func (ra *RestAgent) Name() string {
+	return fmt.Sprintf("RestAgent(%v)", ra.listenAddress)
+}
+
 func (ra *RestAgent) Start() error {
 	httpServer := &http.Server{
 		Addr:              ra.listenAddress,

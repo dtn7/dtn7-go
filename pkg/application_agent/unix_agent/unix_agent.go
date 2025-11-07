@@ -8,6 +8,7 @@ package unix_agent
 import (
 	"bufio"
 	"encoding/binary"
+	"fmt"
 	"io"
 	"net"
 	"time"
@@ -42,12 +43,8 @@ func NewUNIXAgent(listenAddress string) (*UNIXAgent, error) {
 	return &agent, nil
 }
 
-func (agent *UNIXAgent) Shutdown() {
-	log.WithField("listenAddress", agent.listenAddress).Info("Shutting agent down")
-	close(agent.stopChan)
-	f, _ := agent.listener.File()
-	_ = f.Close()
-	_ = agent.listener.Close()
+func (agent *UNIXAgent) Name() string {
+	return fmt.Sprintf("UNIXAgent(%v)", agent.listenAddress)
 }
 
 func (agent *UNIXAgent) Endpoints() []bpv7.EndpointID {
@@ -72,6 +69,14 @@ func (agent *UNIXAgent) Start() error {
 	go agent.listen()
 
 	return nil
+}
+
+func (agent *UNIXAgent) Shutdown() {
+	log.WithField("listenAddress", agent.listenAddress).Info("Shutting agent down")
+	close(agent.stopChan)
+	f, _ := agent.listener.File()
+	_ = f.Close()
+	_ = agent.listener.Close()
 }
 
 func (agent *UNIXAgent) listen() {

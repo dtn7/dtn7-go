@@ -5,6 +5,7 @@
 package application_agent
 
 import (
+	"fmt"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -14,9 +15,31 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
+type AgentAlreadyRegisteredError string
+
+func NewAgentAlreadyRegisteredError(name string) *AgentAlreadyRegisteredError {
+	err := AgentAlreadyRegisteredError(name)
+	return &err
+}
+
+func (err *AgentAlreadyRegisteredError) Error() string {
+	return fmt.Sprintf("Agent has already been registered: %v", string(*err))
+}
+
+type NoSuchAgentError string
+
+func NewNoSuchAgentError(name string) *NoSuchAgentError {
+	err := NoSuchAgentError(name)
+	return &err
+}
+
+func (err *NoSuchAgentError) Error() string {
+	return fmt.Sprintf("No such agent registered: %v", string(*err))
+}
+
 type Manager struct {
 	stateMutex   sync.RWMutex
-	agents       []ApplicationAgent
+	agents       map[string]ApplicationAgent
 	sendCallback func(bundle *bpv7.Bundle)
 }
 
@@ -24,7 +47,7 @@ var managerSingleton *Manager
 
 func InitialiseApplicationAgentManager(sendCallback func(bundle *bpv7.Bundle)) error {
 	manager := Manager{
-		agents:       make([]ApplicationAgent, 0, 10),
+		agents:       make(map[string]ApplicationAgent),
 		sendCallback: sendCallback,
 	}
 	managerSingleton = &manager
@@ -46,11 +69,10 @@ func (manager *Manager) Shutdown() {
 	manager.stateMutex.RLock()
 	defer manager.stateMutex.RUnlock()
 
-	for _, agent := range manager.agents {
-		agent.Shutdown()
+	for agentName, agent := range manager.agents {
+		delete(manager.agents, agentName)
+		go agent.Shutdown()
 	}
-
-	manager.agents = make([]ApplicationAgent, 0)
 }
 
 // GetEndpoints returns a slice of all registered Endpoints on this node
@@ -67,44 +89,47 @@ func (manager *Manager) GetEndpoints() []bpv7.EndpointID {
 	return endpoints
 }
 
+// RegisterAgent registers and start a new ApplicationAgent
+// If an agent with the same name is already registered, then method returns an AgentAlreadyRegisteredError
+// If the agent's startup fails,the resulting error will be returned, and the agent will NOT be registered.
 func (manager *Manager) RegisterAgent(newAgent ApplicationAgent) error {
 	manager.stateMutex.Lock()
 	defer manager.stateMutex.Unlock()
 
-	present := false
-	for _, agent := range manager.agents {
-		if agent == newAgent {
-			present = true
-			break
-		}
-	}
+	agentName := newAgent.Name()
 
-	if !present {
-		manager.agents = append(manager.agents, newAgent)
+	if _, ok := manager.agents[agentName]; ok {
+		return NewAgentAlreadyRegisteredError(agentName)
 	}
 
 	err := newAgent.Start()
-
-	// TODO: check if there are pending bundles for this endpoint ID
-
-	return err
-}
-
-func (manager *Manager) UnregisterEndpoint(removeAgent ApplicationAgent) error {
-	manager.stateMutex.Lock()
-	defer manager.stateMutex.Unlock()
-
-	remainingAgents := make([]ApplicationAgent, 0, len(manager.agents))
-	for _, agent := range manager.agents {
-		if agent != removeAgent {
-			remainingAgents = append(remainingAgents, agent)
-		}
+	if err != nil {
+		return err
 	}
 
-	manager.agents = remainingAgents
+	manager.agents[agentName] = newAgent
+
 	return nil
 }
 
+// UnregisterAgent stops an application agent and removes it from the manager.
+// If no agent with the given name is registered, then method returns a NoSuchAgentError.
+func (manager *Manager) UnregisterAgent(agentName string) error {
+	manager.stateMutex.Lock()
+	defer manager.stateMutex.Unlock()
+
+	agent, ok := manager.agents[agentName]
+	if !ok {
+		return NewNoSuchAgentError(agentName)
+	}
+
+	delete(manager.agents, agentName)
+	agent.Shutdown()
+
+	return nil
+}
+
+// Delivery attempts to deliver a bundle to all registered agents
 func (manager *Manager) Delivery(bundleDescriptor *store.BundleDescriptor) {
 	manager.stateMutex.RLock()
 	defer manager.stateMutex.RUnlock()
@@ -121,6 +146,7 @@ func (manager *Manager) Delivery(bundleDescriptor *store.BundleDescriptor) {
 	}
 }
 
+// Send is a callback to be used by agents to send a newly created bundle
 func (manager *Manager) Send(bndl *bpv7.Bundle) {
 	idKeeper := id_keeper.GetIdKeeperSingleton()
 	idKeeper.Update(bndl)

@@ -8,32 +8,24 @@
 package application_agent
 
 import (
-	"fmt"
-
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
 type ApplicationAgent interface {
-	// Endpoints returns the EndpointIDs that this ApplicationAgent answers to.
+	// Name is some string which uniquely identifies an agent.
+	// Should include the agent type, as well as relevant config data (such as addresses that are listened on)
+	Name() string
+
+	// Endpoints returns the EndpointIDs that have been registered with this ApplicationAgent.
 	Endpoints() []bpv7.EndpointID
 
+	// Deliver delivers the bundle to  this Agent's mailboxes
 	Deliver(bundleDescriptor *store.BundleDescriptor) error
 
 	Start() error
 
 	Shutdown()
-}
-
-type NoAgentRegisteredError bpv7.EndpointID
-
-func NewNoAgentRegisteredError(eid bpv7.EndpointID) *NoAgentRegisteredError {
-	err := NoAgentRegisteredError(eid)
-	return &err
-}
-
-func (err *NoAgentRegisteredError) Error() string {
-	return fmt.Sprintf("no agent registered for EndpointID %v", bpv7.EndpointID(*err))
 }
 
 // bagContainsEndpoint checks if some bag/array/slice of endpoints contains another collection of endpoints.
