@@ -47,7 +47,7 @@ type Endpoint struct {
 	active bool
 
 	// Whether the protocol handshake has been completed
-	handshake *uint32
+	handshake atomic.Bool
 }
 
 func NewListenerEndpoint(id bpv7.EndpointID, session *quic.Conn, receiveCallback func(*bpv7.Bundle)) *Endpoint {
@@ -57,7 +57,6 @@ func NewListenerEndpoint(id bpv7.EndpointID, session *quic.Conn, receiveCallback
 		connection:      session,
 		dialer:          false,
 		active:          false,
-		handshake:       new(uint32),
 		receiveCallback: receiveCallback,
 		rateLimiter:     semaphore.NewWeighted(5),
 	}
@@ -69,7 +68,6 @@ func NewDialerEndpoint(peerAddress string, id bpv7.EndpointID, receiveCallback f
 		peerAddress:     peerAddress,
 		dialer:          true,
 		active:          false,
-		handshake:       new(uint32),
 		receiveCallback: receiveCallback,
 		rateLimiter:     semaphore.NewWeighted(5),
 	}
@@ -172,8 +170,8 @@ func (endpoint *Endpoint) Send(bndl *bpv7.Bundle) error {
 		"bundle": bndl.ID(),
 	}).Debug("Sending bundle")
 
-	handshake := atomic.LoadUint32(endpoint.handshake)
-	if handshake == 0 {
+	handshake := endpoint.handshake.Load()
+	if !handshake {
 		return internal.NewInitialisationError("Handshake not yet completed")
 	}
 
@@ -441,7 +439,7 @@ func (endpoint *Endpoint) handshakeListener() error {
 		return internal.NewHandshakeError("error closing handshake stream", internal.ConnectionError, err)
 	}
 
-	atomic.StoreUint32(endpoint.handshake, 1)
+	endpoint.handshake.Store(true)
 
 	return nil
 }
@@ -465,9 +463,11 @@ func (endpoint *Endpoint) handshakeDialer() error {
 
 	// wait for the listener's ID
 	err = endpoint.receiveEndpointID(stream)
-	// TODO: if error, close stream
+	if err != nil {
+		return err
+	}
 
-	atomic.StoreUint32(endpoint.handshake, 1)
+	endpoint.handshake.Store(true)
 
 	return err
 }
