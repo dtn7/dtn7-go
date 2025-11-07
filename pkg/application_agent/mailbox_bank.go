@@ -1,34 +1,11 @@
 package application_agent
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
-
-type IDAlreadyRegisteredError bpv7.EndpointID
-
-func NewIDAlreadyRegisteredError(eid bpv7.EndpointID) *IDAlreadyRegisteredError {
-	err := IDAlreadyRegisteredError(eid)
-	return &err
-}
-
-func (err *IDAlreadyRegisteredError) Error() string {
-	return fmt.Sprintf("ID has already been registered: %v", bpv7.EndpointID(*err).String())
-}
-
-type NoSuchIDError bpv7.EndpointID
-
-func NewNoSuchIDError(eid bpv7.EndpointID) *NoSuchIDError {
-	err := NoSuchIDError(eid)
-	return &err
-}
-
-func (err *NoSuchIDError) Error() string {
-	return fmt.Sprintf("No such ID has been registered: %v", bpv7.EndpointID(*err).String())
-}
 
 type MailboxBank struct {
 	rwMutex sync.RWMutex

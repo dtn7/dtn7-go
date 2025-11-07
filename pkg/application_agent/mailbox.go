@@ -5,7 +5,6 @@
 package application_agent
 
 import (
-	"fmt"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -13,28 +12,6 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
-
-type AlreadyDeliveredError bpv7.BundleID
-
-func NewAlreadyDeliveredError(bid bpv7.BundleID) *AlreadyDeliveredError {
-	err := AlreadyDeliveredError(bid)
-	return &err
-}
-
-func (err *AlreadyDeliveredError) Error() string {
-	return fmt.Sprintf("Bundle %v already in mailbox", bpv7.BundleID(*err).String())
-}
-
-type NoSuchBundleError bpv7.BundleID
-
-func NewNoSuchBundleError(bid bpv7.BundleID) *NoSuchBundleError {
-	err := NoSuchBundleError(bid)
-	return &err
-}
-
-func (err *NoSuchBundleError) Error() string {
-	return fmt.Sprintf("No Bundle with id %v in mailbox", bpv7.BundleID(*err).String())
-}
 
 // Mailbox provides message storage/querying/delivery for application agents to use.
 // The Mailbox does not store the actual bundles so we don't have to keep all bundles in memory all the time.

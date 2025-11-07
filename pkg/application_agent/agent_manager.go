@@ -5,7 +5,6 @@
 package application_agent
 
 import (
-	"fmt"
 	"sync"
 
 	log "github.com/sirupsen/logrus"
@@ -14,28 +13,6 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/id_keeper"
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
-
-type AgentAlreadyRegisteredError string
-
-func NewAgentAlreadyRegisteredError(name string) *AgentAlreadyRegisteredError {
-	err := AgentAlreadyRegisteredError(name)
-	return &err
-}
-
-func (err *AgentAlreadyRegisteredError) Error() string {
-	return fmt.Sprintf("Agent has already been registered: %v", string(*err))
-}
-
-type NoSuchAgentError string
-
-func NewNoSuchAgentError(name string) *NoSuchAgentError {
-	err := NoSuchAgentError(name)
-	return &err
-}
-
-func (err *NoSuchAgentError) Error() string {
-	return fmt.Sprintf("No such agent registered: %v", string(*err))
-}
 
 type Manager struct {
 	stateMutex   sync.RWMutex
