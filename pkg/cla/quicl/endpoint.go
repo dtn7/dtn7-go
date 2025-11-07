@@ -15,15 +15,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"golang.org/x/sync/semaphore"
-
 	"github.com/dtn7/cboring"
+	"github.com/quic-go/quic-go"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla"
 	"github.com/dtn7/dtn7-go/pkg/cla/quicl/internal"
-	"github.com/quic-go/quic-go"
-	log "github.com/sirupsen/logrus"
 )
 
 // TODO: is this a reasonable value? I don't know...
@@ -323,12 +322,28 @@ func (endpoint *Endpoint) handleConnection() {
 
 	for {
 		stream, err := endpoint.connection.AcceptStream(context.Background())
-		log.WithField("CLA", endpoint).Debug("New incoming stream")
 		if err != nil {
+			log.WithFields(log.Fields{
+				"CLA":   endpoint,
+				"error": err,
+			}).Debug("Error accepting stream")
+
 			var netErr net.Error
 			var appErr *quic.ApplicationError
 
 			switch {
+			case errors.As(err, &appErr):
+				log.WithFields(log.Fields{
+					"peer":       endpoint.peerId,
+					"remote":     appErr.Remote,
+					"error code": appErr.ErrorCode,
+					"error msg":  appErr.ErrorMessage,
+				}).Debug("Connection to peer closed")
+				if appErr.Remote {
+					go cla.GetManagerSingleton().NotifyDisconnect(endpoint)
+				}
+				return
+
 			case errors.As(err, &netErr):
 				if netErr.Timeout() {
 					log.WithFields(log.Fields{
@@ -341,18 +356,6 @@ func (endpoint *Endpoint) handleConnection() {
 					return
 				}
 
-			case errors.As(err, &appErr):
-				log.WithFields(log.Fields{
-					"peer":       endpoint.peerId,
-					"remote":     appErr.Remote,
-					"error code": appErr.ErrorCode,
-					"error msg":  appErr.ErrorMessage,
-				}).Debug("Connection to peer closed")
-				if appErr.Remote {
-					cla.GetManagerSingleton().NotifyDisconnect(endpoint)
-				}
-				return
-
 			default:
 				log.WithFields(log.Fields{
 					"CLA":   endpoint,
@@ -360,12 +363,13 @@ func (endpoint *Endpoint) handleConnection() {
 				}).Error("Unexpected error while waiting for stream")
 			}
 		} else {
+			log.WithField("CLA", endpoint).Debug("New incoming stream")
 			go endpoint.handleStream(stream)
 		}
 	}
 }
 
-// handleStream hadles incoming bundles
+// handleStream handles incoming bundles
 // A single stream will always carry a single bundle, and will be closed once the bundle has been transmitted
 func (endpoint *Endpoint) handleStream(stream *quic.Stream) {
 	log.WithField("cla", endpoint).Debug("Receiving bundle via quicl")
