@@ -119,6 +119,11 @@ func (ra *RestAgent) Shutdown() {
 
 }
 
+func (ra *RestAgent) GC() {
+	log.WithField("agent", ra.Name()).Debug("Performing gc")
+	ra.mailboxes.GC()
+}
+
 // Deliver checks incoming BundleMessages and puts them in a mailbox.
 func (ra *RestAgent) Deliver(bundleDescriptor *store.BundleDescriptor) error {
 	return ra.mailboxes.Deliver(bundleDescriptor)

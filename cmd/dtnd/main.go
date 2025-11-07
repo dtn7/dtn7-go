@@ -141,7 +141,7 @@ func main() {
 			conf.Cron.GC,
 		),
 		gocron.NewTask(
-			store.GetStoreSingleton().GarbageCollect,
+			gc,
 		),
 	)
 	if err != nil {
@@ -156,4 +156,9 @@ func main() {
 	sig := <-c
 	log.WithField("signal", sig).Info("Received signal, shutting down.")
 	return
+}
+
+func gc() {
+	store.GetStoreSingleton().GarbageCollect()
+	application_agent.GetManagerSingleton().GC()
 }

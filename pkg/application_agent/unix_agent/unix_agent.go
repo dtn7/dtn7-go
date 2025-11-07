@@ -79,6 +79,11 @@ func (agent *UNIXAgent) Shutdown() {
 	_ = agent.listener.Close()
 }
 
+func (agent *UNIXAgent) GC() {
+	log.WithField("agent", agent.Name()).Debug("Performing gc")
+	agent.mailboxes.GC()
+}
+
 func (agent *UNIXAgent) listen() {
 	defer func() {
 		log.WithField("listenAddress", agent.listenAddress).Info("Cleaning up socket")

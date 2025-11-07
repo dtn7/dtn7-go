@@ -130,3 +130,11 @@ func (manager *Manager) Send(bndl *bpv7.Bundle) {
 	log.WithFields(log.Fields{"bundle": bndl.ID().String()}).Debug("Application agent sent bundle")
 	manager.sendCallback(bndl)
 }
+
+// GC performs garbage collection on all registered agents
+func (manager *Manager) GC() {
+	log.Debug("Performing agent gc")
+	for _, agent := range manager.agents {
+		go agent.GC()
+	}
+}

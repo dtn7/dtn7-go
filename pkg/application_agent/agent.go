@@ -26,6 +26,9 @@ type ApplicationAgent interface {
 	Start() error
 
 	Shutdown()
+
+	// GC performs garbage collection by removing references to stale bundles from mailboxes
+	GC()
 }
 
 // bagContainsEndpoint checks if some bag/array/slice of endpoints contains another collection of endpoints.

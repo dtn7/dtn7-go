@@ -212,6 +212,8 @@ func (mailbox *Mailbox) Clear() {
 // GC runs garbage collection on mailbox
 // Removes all bundles which can longer be loaded from the store (most likely because they have been deleted)
 func (mailbox *Mailbox) GC() {
+	log.Debug("Performing mailbox gc")
+
 	mailbox.rwMutex.Lock()
 	defer mailbox.rwMutex.Unlock()
 

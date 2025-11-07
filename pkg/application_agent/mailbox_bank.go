@@ -3,6 +3,8 @@ package application_agent
 import (
 	"sync"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
@@ -86,4 +88,11 @@ func (bank *MailboxBank) Deliver(bundleDescriptor *store.BundleDescriptor) error
 		return NewNoSuchIDError(destination)
 	}
 	return destinationMailbox.Deliver(bundleDescriptor)
+}
+
+func (bank *MailboxBank) GC() {
+	for eid, mailbox := range bank.mailboxes {
+		log.WithField("eid", eid).Debug("Garbage collecting mailbox")
+		go mailbox.GC()
+	}
 }
