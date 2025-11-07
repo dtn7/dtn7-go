@@ -9,8 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-
-	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
 // CLAType is one of the supported Convergence Layer Adaptors
@@ -83,10 +81,4 @@ func NewUnsupportedCLATypeError(claType CLAType) *UnsupportedCLATypeError {
 
 func (err *UnsupportedCLATypeError) Error() string {
 	return fmt.Sprintf("%s is not a supported CLA type", CLAType(*err))
-}
-
-type ListenerConfig struct {
-	Type       CLAType
-	Address    string
-	EndpointId bpv7.EndpointID
 }

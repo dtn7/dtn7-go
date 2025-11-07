@@ -115,8 +115,6 @@ func (manager *Manager) GetListeners() []ConvergenceListener {
 	return manager.listeners
 }
 
-// TODO: Method to create CLA from parameters
-
 // Register is the exported method to register a new CLA.
 // All it does is spawn the actual registration in a goroutine and return immediately
 // This is done to avoid deadlocks where another process may indefinitely wait for the CLA's
@@ -276,6 +274,8 @@ func (manager *Manager) NotifyDisconnect(cla Convergence) {
 	delete(manager.pendingRemoval, cla.Address())
 }
 
+// RegisterListener starts the ConvergenceListener
+// and, if the startup succeeds, adds it to the Manager's list of listeners
 func (manager *Manager) RegisterListener(listener ConvergenceListener) error {
 	err := listener.Start()
 	if err != nil {

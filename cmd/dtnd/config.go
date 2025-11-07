@@ -35,7 +35,7 @@ type config struct {
 	LogLevel  log.Level
 	Store     storeConfig
 	Routing   routingConfig
-	Listener  []cla.ListenerConfig
+	Listener  []ListenerConfig
 	Agents    agentsConfig
 	Discovery []discovery.Announcement
 	Cron      cronConfig
@@ -61,6 +61,12 @@ type tomlRoutingConfig struct {
 
 type routingConfig struct {
 	Algorithm routing.AlgorithmEnum
+}
+
+type ListenerConfig struct {
+	Type       cla.CLAType
+	Address    string
+	EndpointId bpv7.EndpointID
 }
 
 type listenerTomlConfig struct {
@@ -110,7 +116,7 @@ func parse(filename string) (config, error) {
 	}
 
 	conf := config{
-		Listener: make([]cla.ListenerConfig, 0, len(tomlConf.Listener)),
+		Listener: make([]ListenerConfig, 0, len(tomlConf.Listener)),
 	}
 
 	// Parse and set NodeID
@@ -143,7 +149,7 @@ func parse(filename string) (config, error) {
 		if err != nil {
 			return config{}, NewConfigError("Error parsing Listener Type", err)
 		}
-		conf.Listener = append(conf.Listener, cla.ListenerConfig{Type: claType, Address: listener.Address, EndpointId: nodeID})
+		conf.Listener = append(conf.Listener, ListenerConfig{Type: claType, Address: listener.Address, EndpointId: nodeID})
 
 		port, err := parseListenPort(listener.Address)
 		if err != nil {
