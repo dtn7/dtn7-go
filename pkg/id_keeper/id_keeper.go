@@ -19,6 +19,7 @@ package id_keeper
 
 import (
 	"sync"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -87,7 +88,7 @@ func (idk *IdKeeper) Clean() {
 	idk.mutex.Lock()
 	defer idk.mutex.Unlock()
 
-	var threshold = bpv7.DtnTimeNow() - 60
+	var threshold = bpv7.DtnTimeFromTime(time.Now().Add(-time.Hour))
 
 	for tpl := range idk.data {
 		if tpl.time < threshold {
