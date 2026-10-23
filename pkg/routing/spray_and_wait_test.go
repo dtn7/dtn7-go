@@ -164,8 +164,10 @@ func TestSprayBasic_SelectPeersForForwarding(t *testing.T) {
 		}
 	}
 
-	// feeding it 8, of which 5 are the same as before, should just select the 3 new peers and reduce the remaining copies by 3
-	selectedPeers = router.SelectPeersForForwarding(descriptor, peers[:8])
+	// feeding it 8, of which 5 are the same as before, should just select the 3 new peers and reduce the remaining copies by 3.
+	// The processing pipeline filters out known holders before asking the routing algorithm,
+	// so we do the same here.
+	selectedPeers = router.SelectPeersForForwarding(descriptor, withoutKnownHolders(t, descriptor, peers[:8]))
 
 	if len(selectedPeers) != 3 {
 		t.Fatalf("Spray&Wait selected wrong number of peers. Expected 3, got %d", len(selectedPeers))
@@ -189,7 +191,7 @@ func TestSprayBasic_SelectPeersForForwarding(t *testing.T) {
 	}
 
 	// feeding it all peers should now only select 2 and drop the remaining copies to 0
-	selectedPeers = router.SelectPeersForForwarding(descriptor, peers)
+	selectedPeers = router.SelectPeersForForwarding(descriptor, withoutKnownHolders(t, descriptor, peers))
 
 	if len(selectedPeers) != 2 {
 		t.Fatalf("Spray&Wait selected wrong number of peers. Expected 2, got %d", len(selectedPeers))
@@ -205,7 +207,7 @@ func TestSprayBasic_SelectPeersForForwarding(t *testing.T) {
 	}
 
 	// trying again should return no peers
-	selectedPeers = router.SelectPeersForForwarding(descriptor, peers)
+	selectedPeers = router.SelectPeersForForwarding(descriptor, withoutKnownHolders(t, descriptor, peers))
 
 	if len(selectedPeers) != 0 {
 		t.Fatalf("Spray&Wait selected wrong number of peers. Expected 0, got %d", len(selectedPeers))

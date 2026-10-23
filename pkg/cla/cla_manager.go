@@ -4,7 +4,6 @@ import (
 	"sync"
 
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
-	"github.com/dtn7/dtn7-go/pkg/store"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -319,29 +318,21 @@ func (manager *Manager) RegisterListener(listener ConvergenceListener) error {
 	return nil
 }
 
-// GetFilteredPeers returns a slice ov ConvergenceSenders which connect to nodes that are not known to already hold the bundle
-func (manager *Manager) GetFilteredPeers(bundleDescriptor *store.BundleDescriptor) []ConvergenceSender {
-	return filterPeers(bundleDescriptor, manager.GetSenders())
+// GetFilteredPeers returns a slice of ConvergenceSenders which connect to nodes that are not in the given
+// list of EndpointIDs, i.e. nodes that are not known to already hold the bundle.
+func (manager *Manager) GetFilteredPeers(knownHolders []bpv7.EndpointID) []ConvergenceSender {
+	return filterPeers(knownHolders, manager.GetSenders())
 }
 
-// filterPeers filters the nodes which already received a Bundle.
+// filterPeers filters out nodes which are contained in knownHolders, i.e. nodes which already received a Bundle.
 // It returns a list of unused ConvergenceSenders.
-func filterPeers(bundleDescriptor *store.BundleDescriptor, clas []ConvergenceSender) (filtered []ConvergenceSender) {
+func filterPeers(knownHolders []bpv7.EndpointID, clas []ConvergenceSender) (filtered []ConvergenceSender) {
 	filtered = make([]ConvergenceSender, 0, len(clas))
-
-	sentEids, err := bundleDescriptor.GetKnownHolders()
-	if err != nil {
-		log.WithFields(log.Fields{
-			"bundle": bundleDescriptor,
-			"error":  err,
-		}).Debug("Error getting bundle's known holders")
-		return []ConvergenceSender{}
-	}
 
 	for _, cs := range clas {
 		skip := false
 
-		for _, eid := range sentEids {
+		for _, eid := range knownHolders {
 			if cs.GetPeerEndpointID() == eid {
 				skip = true
 				break

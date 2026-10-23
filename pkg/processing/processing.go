@@ -28,6 +28,20 @@ func SetOwnNodeID(nid bpv7.EndpointID) {
 func forwardingAsync(bundleDescriptor *store.BundleDescriptor, bundle *bpv7.Bundle) {
 	log.WithField("bundle", bundleDescriptor).Debug("Processing bundle")
 
+	// Whatever happens below, the bundle's constraints must be reset once this pass is over.
+	// Otherwise the bundle would remain in a "forwarding pending" state and would never be dispatched again.
+	// Resetting instead of removing the ForwardPending constraint alone also cleans up partial state,
+	// e.g. if an error occurred halfway through.
+	// Note: reassembly is not implemented yet, so no ReassemblyPending constraint can be lost here.
+	defer func() {
+		if err := bundleDescriptor.ResetConstraints(); err != nil {
+			log.WithFields(log.Fields{
+				"bundle": bundleDescriptor.ID(),
+				"error":  err,
+			}).Debug("Error resetting bundle constraints")
+		}
+	}()
+
 	// Step 1: add "Forward Pending", remove "Dispatch Pending"
 	err := bundleDescriptor.AddConstraint(store.ForwardPending)
 	if err != nil {
@@ -48,17 +62,25 @@ func forwardingAsync(bundleDescriptor *store.BundleDescriptor, bundle *bpv7.Bund
 
 	// Step 2: determine if contraindicated - whatever that means
 	// Step 2.1: Call routing algorithm(?)
-	peers := cla.GetManagerSingleton().GetFilteredPeers(bundleDescriptor)
+	knownHolders, err := bundleDescriptor.GetKnownHolders()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"bundle": bundleDescriptor.ID(),
+			"error":  err,
+		}).Warn("Could not get bundle's known holders")
+		return
+	}
+
+	peers := cla.GetManagerSingleton().GetFilteredPeers(knownHolders)
 
 	// attempt direct delivery
-	directDelivery(bundleDescriptor, bundle, peers)
+	peers = directDelivery(bundleDescriptor, bundle, peers)
 
-	// Ask routing algorithm if we should send to anyone else
+	// Ask routing algorithm if we should send to anyone else.
 	forwardToPeers := routing.GetAlgorithmSingleton().SelectPeersForForwarding(bundleDescriptor, peers)
 
-	// Step 3: if contraindicated, call `contraindicateBundle`, and return
+	// Step 3: if contraindicated, the deferred ResetConstraints will make the bundle dispatchable again
 	if len(forwardToPeers) == 0 {
-		bundleContraindicated(bundleDescriptor)
 		return
 	}
 
@@ -70,38 +92,37 @@ func BundleForwarding(bundleDescriptor *store.BundleDescriptor, bundle *bpv7.Bun
 	go forwardingAsync(bundleDescriptor, bundle)
 }
 
-func bundleContraindicated(bundleDescriptor *store.BundleDescriptor) {
-	// TODO: is there anything else to do here?
-	err := bundleDescriptor.ResetConstraints()
-	if err != nil {
-		log.WithFields(log.Fields{
-			"bundle": bundleDescriptor,
-			"error":  err,
-		}).Error("Error resetting bundle constraints")
-	}
-}
-
-func directDelivery(bundleDescriptor *store.BundleDescriptor, bundle *bpv7.Bundle, peers []cla.ConvergenceSender) {
+// directDelivery forwards the bundle to all peers which are the bundle's destination.
+// It returns the peers which were not direct-delivered to, so that the processing pipeline
+// can forward the bundle to the remaining peers afterwards.
+// Note: peers which failed to receive the bundle are not part of the returned list either.
+// They are not added to the known holders, so the next dispatch will attempt direct delivery again.
+func directDelivery(bundleDescriptor *store.BundleDescriptor, bundle *bpv7.Bundle, peers []cla.ConvergenceSender) []cla.ConvergenceSender {
 	metadata, err := bundleDescriptor.Metadata()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"bundle": bundleDescriptor.ID(),
 			"error":  err,
 		}).Debug("Could not get bundle metadata")
-		return
+		return peers
 	}
 
 	deliveries := make([]cla.ConvergenceSender, 0, len(peers))
+	remaining := make([]cla.ConvergenceSender, 0, len(peers))
 
 	for _, peer := range peers {
 		if peer.GetPeerEndpointID() == metadata.Destination {
 			deliveries = append(deliveries, peer)
+		} else {
+			remaining = append(remaining, peer)
 		}
 	}
 
 	if len(deliveries) > 0 {
 		forwardBundleToPeers(bundleDescriptor, bundle, deliveries)
 	}
+
+	return remaining
 }
 
 func forwardBundleToPeers(bundleDescriptor *store.BundleDescriptor, bundle *bpv7.Bundle, peers []cla.ConvergenceSender) {
@@ -141,15 +162,6 @@ func forwardBundleToPeers(bundleDescriptor *store.BundleDescriptor, bundle *bpv7
 		go forwardBundleToPeer(bundleDescriptor, bundle, peer, &wg)
 	}
 	wg.Wait()
-
-	// Step 6: remove "Forward Pending"
-	err = bundleDescriptor.RemoveConstraint(store.ForwardPending)
-	if err != nil {
-		log.WithFields(log.Fields{
-			"bundle": bundleDescriptor,
-			"error":  err,
-		}).Error("Error removing constraint from bundle")
-	}
 }
 
 func forwardBundleToPeer(bundleDescriptor *store.BundleDescriptor, bundle *bpv7.Bundle, peer cla.ConvergenceSender, wg *sync.WaitGroup) {

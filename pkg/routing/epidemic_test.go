@@ -34,15 +34,17 @@ func TestEpidemicRouting_SelectPeersForForwarding(t *testing.T) {
 		}
 	}
 
-	// giving the same peers again should select none
-	selectedPeers = router.SelectPeersForForwarding(descriptor, peers[:5])
+	// giving the same peers again should select none.
+	// The processing pipeline filters out known holders before asking the routing algorithm,
+	// so we do the same here.
+	selectedPeers = router.SelectPeersForForwarding(descriptor, withoutKnownHolders(t, descriptor, peers[:5]))
 
 	if len(selectedPeers) != 0 {
-		t.Fatal("Epidemic should not select known holders")
+		t.Fatal("Epidemic should not select any peers")
 	}
 
 	// giving all peers should only select new peers
-	selectedPeers = router.SelectPeersForForwarding(descriptor, peers)
+	selectedPeers = router.SelectPeersForForwarding(descriptor, withoutKnownHolders(t, descriptor, peers))
 
 	if len(selectedPeers) != 5 {
 		t.Fatal("Epidemic did not select correct number of peers")

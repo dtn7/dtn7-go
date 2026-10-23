@@ -51,6 +51,34 @@ func generatePeers(n uint) []cla.ConvergenceSender {
 	return peers
 }
 
+// withoutKnownHolders filters out all peers which are already listed as known holders of the given bundle.
+// This mirrors what the processing pipeline does before calling SelectPeersForForwarding.
+func withoutKnownHolders(t *testing.T, descriptor *store.BundleDescriptor, peers []cla.ConvergenceSender) []cla.ConvergenceSender {
+	t.Helper()
+
+	knownHolders, err := descriptor.GetKnownHolders()
+	if err != nil {
+		t.Fatalf("Error getting known holders: %s", err)
+	}
+
+	filtered := make([]cla.ConvergenceSender, 0, len(peers))
+	for _, peer := range peers {
+		known := false
+		for _, eid := range knownHolders {
+			if peer.GetPeerEndpointID() == eid {
+				known = true
+				break
+			}
+		}
+
+		if !known {
+			filtered = append(filtered, peer)
+		}
+	}
+
+	return filtered
+}
+
 func testBundle(t *testing.T) (*store.BundleDescriptor, *bpv7.Bundle) {
 	bundle, err := bpv7.Builder().
 		CRC(bpv7.CRC32).

@@ -55,6 +55,8 @@ type Algorithm interface {
 
 	// SelectPeersForForwarding returns an array of ConvergenceSender for a requested bundle.
 	// dtnd will attempt to forward the bundle to all the selected peers.
+	// The peers passed in are already filtered: they only contain nodes which are not known to
+	// already hold the bundle. Implementations must not assume they need to filter known holders themselves.
 	SelectPeersForForwarding(descriptor *store.BundleDescriptor, peers []cla.ConvergenceSender) []cla.ConvergenceSender
 
 	// ModifyHeaders is called by the processing pipeline after SelectPeersForForwarding.
