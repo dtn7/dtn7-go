@@ -2,14 +2,13 @@ package quicl
 
 import (
 	"fmt"
-	"net"
 	"reflect"
 	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
-	"pgregory.net/rapid"
 
+	"github.com/dtn7/dtn7-go/internal/testhelpers"
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla"
 )
@@ -19,22 +18,6 @@ const (
 	maxClients  = 10
 	maxBundles  = 10
 )
-
-func getRandomPort(t *rapid.T) int {
-	addr, err := net.ResolveUDPAddr("udp", "localhost:0")
-	if err != nil {
-		t.Error(err)
-	}
-
-	l, err := net.ListenUDP("udp", addr)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() { _ = l.Close() }()
-
-	return l.LocalAddr().(*net.UDPAddr).Port
-}
 
 func setup() {
 	receive := func(bundle *bpv7.Bundle) {}
@@ -57,7 +40,7 @@ func TestSingle(t *testing.T) {
 		t.Fatalf("Error parsing timeout: %v", err.Error())
 	}
 
-	bndl := generateSampleBundle(t)
+	bndl := testhelpers.SampleBundle(t)
 	port := 35037
 	recvChan := make(chan *bpv7.Bundle)
 
@@ -99,7 +82,7 @@ func TestProperty(t *testing.T) {
 	defer teardown()
 	rapid.Check(t, func(t *rapid.T) {
 
-		port := getRandomPort(t)
+		port := testhelpers.RandomPort(t, "udp")
 		numberOfClients := rapid.IntRange(1, maxClients).Draw(t, "Number of Clients")
 		numberOfBundles := rapid.IntRange(1, maxBundles).Draw(t, "Number of Bundles")
 		var wgSend sync.WaitGroup

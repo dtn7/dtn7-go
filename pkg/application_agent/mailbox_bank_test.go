@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pgregory.net/rapid"
 
+	"github.com/dtn7/dtn7-go/internal/testhelpers"
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
@@ -25,10 +26,7 @@ func TestMailboxBank(t *testing.T) {
 		eids := make([]bpv7.EndpointID, 0, nMailboxes)
 		eidMap := make(map[bpv7.EndpointID]bool, nMailboxes)
 		for i := range nMailboxes {
-			eid, err := bpv7.NewEndpointID(rapid.StringMatching(bpv7.DtnEndpointRegexpNotNone).Draw(tr, fmt.Sprintf("eid %v", i)))
-			if err != nil {
-				tr.Fatal(err)
-			}
+			eid := testhelpers.RandomEndpointID.Draw(tr, fmt.Sprintf("eid %v", i))
 
 			if _, ok := eidMap[eid]; ok {
 				continue
@@ -37,8 +35,7 @@ func TestMailboxBank(t *testing.T) {
 			eids = append(eids, eid)
 			eidMap[eid] = true
 
-			err = bank.Register(eid)
-			if err != nil {
+			if err := bank.Register(eid); err != nil {
 				tr.Fatal(err)
 			}
 		}
@@ -67,7 +64,8 @@ func TestMailboxBank(t *testing.T) {
 			}
 		}
 
-		rIndex := rand.Intn(int(nMailboxes))
+		// eids is deduplicated, so use its length rather than nMailboxes
+		rIndex := rand.Intn(len(eids))
 		remeid := eids[rIndex]
 
 		if err := bank.Unregister(remeid); err != nil {

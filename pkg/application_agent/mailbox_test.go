@@ -3,8 +3,6 @@ package application_agent
 import (
 	"errors"
 	"fmt"
-	"math/rand"
-	"os"
 	"reflect"
 	"testing"
 
@@ -12,44 +10,35 @@ import (
 	log "github.com/sirupsen/logrus"
 	"pgregory.net/rapid"
 
+	"github.com/dtn7/dtn7-go/internal/testhelpers"
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/store"
 )
 
-const mailboxTestFolderFormat = "/tmp/dtn7-go-tests/mailbox-tests/%v"
-
-func initMailboxTest(t *testing.T) (string, *Mailbox) {
+func initMailboxTest(t *testing.T) *Mailbox {
 	log.SetLevel(log.ErrorLevel)
-	instanceID := fmt.Sprintf("%v%v", rand.Uint64(), rand.Uint64())
 	nodeID, _ := bpv7.NewEndpointID("dtn://test/")
 
-	err := store.InitialiseStore(nodeID, fmt.Sprintf(mailboxTestFolderFormat, instanceID))
+	err := store.InitialiseStore(nodeID, t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	mailbox := NewMailbox()
-
-	return instanceID, mailbox
+	return NewMailbox()
 }
 
-func cleanupMailboxTest(t *testing.T, instanceID string) {
-	err := store.ShutdownStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = os.RemoveAll(fmt.Sprintf(mailboxTestFolderFormat, instanceID))
-	if err != nil {
+func cleanupMailboxTest(t *testing.T) {
+	if err := store.ShutdownStore(); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestMailbox_Deliver(t *testing.T) {
 	rapid.Check(t, func(tr *rapid.T) {
-		instanceID, mailbox := initMailboxTest(t)
-		defer cleanupMailboxTest(t, instanceID)
+		mailbox := initMailboxTest(t)
+		defer cleanupMailboxTest(t)
 
-		bndl := randomizedBundleGenerator.Draw(tr, "bundle")
+		bndl := testhelpers.RandomBundle.Draw(tr, "bundle")
 
 		bdesc, err := store.GetStoreSingleton().InsertBundle(bndl)
 		if err != nil {
@@ -73,10 +62,10 @@ func TestMailbox_Deliver(t *testing.T) {
 
 func TestMailbox_Get(t *testing.T) {
 	rapid.Check(t, func(tr *rapid.T) {
-		instanceID, mailbox := initMailboxTest(t)
-		defer cleanupMailboxTest(t, instanceID)
+		mailbox := initMailboxTest(t)
+		defer cleanupMailboxTest(t)
 
-		bundle := randomizedBundleGenerator.Draw(tr, fmt.Sprintf("bundle"))
+		bundle := testhelpers.RandomBundle.Draw(tr, fmt.Sprintf("bundle"))
 
 		descriptor, err := store.GetStoreSingleton().InsertBundle(bundle)
 		if err != nil {
@@ -115,8 +104,8 @@ func TestMailbox_Get(t *testing.T) {
 
 func TestMailbox_All(t *testing.T) {
 	rapid.Check(t, func(tr *rapid.T) {
-		instanceID, mailbox := initMailboxTest(t)
-		defer cleanupMailboxTest(t, instanceID)
+		mailbox := initMailboxTest(t)
+		defer cleanupMailboxTest(t)
 
 		nBundles := rapid.Uint8Min(1).Draw(tr, "Drawing number of test bundles")
 		bundles := make([]*bpv7.Bundle, 0, nBundles)
@@ -124,7 +113,7 @@ func TestMailbox_All(t *testing.T) {
 		bundleMap := make(map[bpv7.BundleID]*bpv7.Bundle, nBundles)
 
 		for i := range nBundles {
-			bndl := randomizedBundleGenerator.Draw(tr, fmt.Sprintf("bundle %d", i))
+			bndl := testhelpers.RandomBundle.Draw(tr, fmt.Sprintf("bundle %d", i))
 			if _, ok := bundleMap[bndl.ID()]; !ok {
 				bundles = append(bundles, bndl)
 				bundleMap[bndl.ID()] = bndl

@@ -4,6 +4,8 @@ import (
 	"testing"
 )
 
+// Kept local instead of using internal/testhelpers.SampleBundle: the tests in
+// this package cannot import it, as it imports this package.
 func generateSampleBundle(t *testing.T) *Bundle {
 	bndl, err := Builder().
 		CRC(CRC32).

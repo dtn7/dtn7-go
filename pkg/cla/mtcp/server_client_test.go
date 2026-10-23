@@ -7,31 +7,15 @@ package mtcp
 
 import (
 	"fmt"
-	"net"
 	"sync"
 	"testing"
 
 	"pgregory.net/rapid"
 
+	"github.com/dtn7/dtn7-go/internal/testhelpers"
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla"
 )
-
-func getRandomPort(t *rapid.T) int {
-	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
-	if err != nil {
-		t.Error(err)
-	}
-
-	l, err := net.ListenTCP("tcp", addr)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer func() { _ = l.Close() }()
-
-	return l.Addr().(*net.TCPAddr).Port
-}
 
 func setup() {
 	receive := func(bundle *bpv7.Bundle) {}
@@ -50,7 +34,7 @@ func TestSendReceive(t *testing.T) {
 		setup()
 		defer teardown()
 
-		port := getRandomPort(t)
+		port := testhelpers.RandomPort(t, "tcp")
 		numberOfClients := rapid.IntRange(1, 25).Draw(t, "Number of Clients")
 		numberOfBundles := uint8(rapid.IntRange(1, 256).Draw(t, "Number of Bundles"))
 		var wgSend sync.WaitGroup
@@ -61,7 +45,7 @@ func TestSendReceive(t *testing.T) {
 		bundles := make([]*bpv7.Bundle, numberOfBundles)
 		var i uint8
 		for i = 0; i < numberOfBundles; i++ {
-			bundles[i] = randomizedBundleGenerator.Draw(t, fmt.Sprintf("bundle %d", i))
+			bundles[i] = testhelpers.RandomBundle.Draw(t, fmt.Sprintf("bundle %d", i))
 		}
 
 		receiveFunc := func(bundle *bpv7.Bundle) {

@@ -5,6 +5,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/dtn7/dtn7-go/internal/testhelpers"
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"pgregory.net/rapid"
 )
@@ -22,8 +23,8 @@ func TestSendReceive(t *testing.T) {
 			return nil, nil
 		}
 
-		peerIDA := bpv7.MustNewEndpointID(rapid.StringMatching(bpv7.DtnEndpointRegexpNotNone).Draw(t, "peerA"))
-		peerIDB := bpv7.MustNewEndpointID(rapid.StringMatching(bpv7.DtnEndpointRegexpNotNone).Draw(t, "peerB"))
+		peerIDA := testhelpers.RandomEndpointID.Draw(t, "peerA")
+		peerIDB := testhelpers.RandomEndpointID.Draw(t, "peerB")
 		peerA, peerB := NewDummyCLAPair(peerIDA, peerIDB, receiveFunc)
 		_ = peerA.Activate()
 		_ = peerB.Activate()
@@ -32,7 +33,7 @@ func TestSendReceive(t *testing.T) {
 		bundles := make([]*bpv7.Bundle, numberOfBundles)
 		var i uint8
 		for i = 0; i < numberOfBundles; i++ {
-			bundles[i] = randomizedBundleGenerator.Draw(t, "bundle")
+			bundles[i] = testhelpers.RandomBundle.Draw(t, "bundle")
 		}
 
 		for i = 0; i < numberOfBundles; i++ {

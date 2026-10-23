@@ -8,35 +8,12 @@ package id_keeper
 import (
 	"testing"
 
-	"github.com/dtn7/dtn7-go/pkg/bpv7"
+	"github.com/dtn7/dtn7-go/internal/testhelpers"
 )
 
 func TestIdKeeper(t *testing.T) {
-	bndl0, err := bpv7.Builder().
-		Source("dtn://src/").
-		Destination("dtn://dest/").
-		CreationTimestampEpoch().
-		Lifetime("60s").
-		BundleCtrlFlags(bpv7.MustNotFragmented|bpv7.RequestStatusTime).
-		BundleAgeBlock(0, bpv7.DeleteBundle).
-		PayloadBlock([]byte("hello world!")).
-		Build()
-	if err != nil {
-		t.Errorf("Creating bundle failed: %v", err)
-	}
-
-	bndl1, err := bpv7.Builder().
-		Source("dtn://src/").
-		Destination("dtn://dest/").
-		CreationTimestampEpoch().
-		Lifetime("60s").
-		BundleCtrlFlags(bpv7.MustNotFragmented|bpv7.RequestStatusTime).
-		BundleAgeBlock(0, bpv7.DeleteBundle).
-		PayloadBlock([]byte("hello world!")).
-		Build()
-	if err != nil {
-		t.Errorf("Creating bundle failed: %v", err)
-	}
+	bndl0 := testhelpers.SampleBundle(t)
+	bndl1 := testhelpers.SampleBundle(t)
 
 	InitializeIdKeeper()
 

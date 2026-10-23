@@ -3,7 +3,6 @@ package store
 import (
 	"errors"
 	"fmt"
-	"os"
 	"reflect"
 	"slices"
 	"testing"
@@ -14,15 +13,21 @@ import (
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 )
 
-func initTest(t *testing.T) {
+func initTest(t *testing.T) string {
 	log.SetLevel(log.ErrorLevel)
+	dir := t.TempDir()
+	initialiseStore(t, dir)
+	return dir
+}
+
+func initialiseStore(t *testing.T, dir string) {
 	nodeID := bpv7.EndpointID{EndpointType: bpv7.DtnEndpoint{
 		NodeName:  "test",
 		Demux:     "",
 		IsDtnNone: false,
 	}}
 
-	err := InitialiseStore(nodeID, "/tmp/dtn7-test")
+	err := InitialiseStore(nodeID, dir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,10 +35,6 @@ func initTest(t *testing.T) {
 
 func cleanupTest(t *testing.T) {
 	err := ShutdownStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = os.RemoveAll("/tmp/dtn7-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +106,7 @@ func TestBundleDeletion(t *testing.T) {
 
 func TestLoadFromDisk(t *testing.T) {
 	rapid.Check(t, func(rt *rapid.T) {
-		initTest(t)
+		dir := initTest(t)
 		defer cleanupTest(t)
 
 		// generate bundle and add it to the store
@@ -120,7 +121,7 @@ func TestLoadFromDisk(t *testing.T) {
 		if err != nil {
 			rt.Fatal(err)
 		}
-		initTest(t)
+		initialiseStore(t, dir)
 
 		// get loaded descriptor & bundle and check them for equality with the original ones
 		retrieved, err := GetStoreSingleton().GetBundleDescriptor(descriptor.ID())

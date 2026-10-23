@@ -2,9 +2,9 @@ package routing
 
 import (
 	"fmt"
-	"os"
 	"testing"
 
+	"github.com/dtn7/dtn7-go/internal/testhelpers"
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla"
 	"github.com/dtn7/dtn7-go/pkg/cla/dummy_cla"
@@ -17,7 +17,7 @@ func setup(t *testing.T, router Algorithm) {
 		Demux:     "",
 		IsDtnNone: false,
 	}}
-	err := store.InitialiseStore(nodeID, "/tmp/dtn7-test")
+	err := store.InitialiseStore(nodeID, t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -26,10 +26,6 @@ func setup(t *testing.T, router Algorithm) {
 
 func teardown(t *testing.T) {
 	err := store.ShutdownStore()
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = os.RemoveAll("/tmp/dtn7-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,19 +76,7 @@ func withoutKnownHolders(t *testing.T, descriptor *store.BundleDescriptor, peers
 }
 
 func testBundle(t *testing.T) (*store.BundleDescriptor, *bpv7.Bundle) {
-	bundle, err := bpv7.Builder().
-		CRC(bpv7.CRC32).
-		Source("dtn://source/").
-		Destination("dtn://destination/").
-		CreationTimestampNow().
-		Lifetime("10m").
-		HopCountBlock(64).
-		BundleAgeBlock(0).
-		PayloadBlock([]byte("hello world!")).
-		Build()
-	if err != nil {
-		t.Fatalf("Error during bundle creation %s", err)
-	}
+	bundle := testhelpers.SampleBundle(t)
 
 	descriptor, err := store.GetStoreSingleton().InsertBundle(bundle)
 	if err != nil {

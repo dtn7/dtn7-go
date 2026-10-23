@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dtn7/dtn7-go/internal/testhelpers"
 	"github.com/dtn7/dtn7-go/pkg/bpv7"
 	"github.com/dtn7/dtn7-go/pkg/cla/dummy_cla"
 	log "github.com/sirupsen/logrus"
@@ -71,7 +72,7 @@ func TestRegisterSender(t *testing.T) {
 		}
 
 		for i := 0; i < len(clas); i++ {
-			eid := bpv7.MustNewEndpointID(rapid.StringMatching(bpv7.DtnEndpointRegexpNotNone).Draw(t, fmt.Sprintf("CLA %v", i)))
+			eid := testhelpers.RandomEndpointID.Draw(t, fmt.Sprintf("CLA %v", i))
 			cla, _ := dummy_cla.NewDummyCLAPair(eid, eid, noop)
 			clas[i] = cla
 			GetManagerSingleton().Register(cla)

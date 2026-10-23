@@ -5,6 +5,8 @@ import (
 	"pgregory.net/rapid"
 )
 
+// Kept local instead of using internal/testhelpers.RandomBundle: the tests in
+// this package cannot import it, as it imports this package.
 var randomizedBundleGenerator = rapid.Custom(func(t *rapid.T) *bpv7.Bundle {
 	bndl, err := bpv7.Builder().
 		CRC(bpv7.CRC32).
