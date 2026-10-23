@@ -22,7 +22,7 @@ We have implemented the following protocols:
 ## Software
 ### Installation
 
-Install the [Go programming language](https://go.dev/), version 1.24 or later.
+Install the [Go programming language](https://go.dev/), version 1.27 or later.
 
 ```bash
 git clone https://github.com/dtn7/dtn7-go.git
